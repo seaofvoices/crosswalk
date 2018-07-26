@@ -1,0 +1,30 @@
+[
+    {
+        "path" : "src/ClientModules",
+        "parent" : "ReplicatedStorage"
+    },
+    {
+        "path" : "src/ServerModules",
+        "parent" : "ServerStorage"
+    },
+    {
+        "path" : "src/SharedModules",
+        "parent" : "ReplicatedStorage"
+    },
+    {
+        "path" : "src/ServerLoader",
+        "parent" : "ServerStorage"
+    },
+    {
+        "path" : "src/ClientLoader",
+        "parent" : "ReplicatedFirst"
+    },
+    {
+        "path" : "src/Main.server.lua",
+        "parent" : "ServerScriptService"
+    },
+    {
+        "path" : "src/ClientMain.client.lua",
+        "parent" : "ReplicatedFirst"
+    }
+]
