@@ -14,9 +14,14 @@ return function()
 		expect(private.remoteFolder:IsA('Folder')).to.equal(true)
 	end)
 
-	it('should create a RemoteFunction to send the joining remotes data', function()
+	it('should create a RemoteFunction to send the remotes data', function()
 		expect(private.dataSender).to.be.a('userdata')
 		expect(private.dataSender:IsA('RemoteFunction')).to.equal(true)
+	end)
+
+	it('should create a RemoteEvent to notify the server that the player is ready', function()
+		expect(private.playerReady).to.be.a('userdata')
+		expect(private.playerReady:IsA('RemoteEvent')).to.equal(true)
 	end)
 
 	it('should create a RemoteEvent to send the keys update', function()

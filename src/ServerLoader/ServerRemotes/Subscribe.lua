@@ -15,6 +15,9 @@ return function(ServerRemotes, private)
 		elseif eventName == 'KeyMissing' then
 			private.onKeyMissing = callback
 
+		elseif eventName == 'PlayerReady' then
+			private.onPlayerReady = callback
+
 		else
 			error(('Can not subscribe to event <%s>'):format(eventName))
 		end

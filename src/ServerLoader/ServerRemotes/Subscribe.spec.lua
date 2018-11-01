@@ -62,4 +62,19 @@ return function()
 		MockSubscribe('KeyMissing', callback)
 		expect(private.onKeyMissing).to.equal(callback)
 	end)
+
+	it('should work with event named `PlayerReady`', function()
+		expect(function()
+			Subscribe('PlayerReady', function() end)
+		end).never.to.throw(true)
+	end)
+
+	it('should set the callback `onPlayerReady` for event named `PlayerReady`', function()
+		local private = {}
+		local MockSubscribe = loader({}, private)
+
+		local callback = function() end
+		MockSubscribe('PlayerReady', callback)
+		expect(private.onPlayerReady).to.equal(callback)
+	end)
 end
