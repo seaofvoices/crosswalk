@@ -68,4 +68,6 @@ return function(configuration)
 			module.Start()
 		end
 	end
+
+	ClientRemotes.Ready()
 end

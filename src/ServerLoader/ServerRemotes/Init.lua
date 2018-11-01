@@ -32,6 +32,10 @@ return function(ServerRemotes, private)
 			warn(('Player <%s> (id:%d) is asking again for remote Ids and keys.'):format(plr.Name, plr.UserId))
 		end
 
+		private.onPlayerReady = function()
+			error('PlayerReady event has not been subscribed')
+		end
+
 		private.dataSender = Instance.new('RemoteFunction')
 		private.dataSender.Name = private.GetUniqueId() .. '  '
 		function private.dataSender.OnServerInvoke(plr)
@@ -46,5 +50,12 @@ return function(ServerRemotes, private)
 		private.keySender = Instance.new('RemoteEvent')
 		private.keySender.Name = private.GetUniqueId() .. '   '
 		private.keySender.Parent = private.remoteFolder
+
+		private.playerReady = Instance.new('RemoteEvent')
+		private.playerReady.Name = private.GetUniqueId() .. '    '
+		private.playerReady.OnServerEvent:Connect(function(player)
+			private.onPlayerReady(player)
+		end)
+		private.playerReady.Parent = private.remoteFolder
 	end
 end

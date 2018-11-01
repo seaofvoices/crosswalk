@@ -99,7 +99,17 @@ return function(configuration)
 
 	for _, module in pairs(ServerModules) do
 		if module.Start then
-			spawn(module.Start)
+			module.Start()
 		end
 	end
+
+	ServerRemotes.Subscribe("PlayerReady", function(player)
+		for _, module in pairs(ServerModules) do
+			if module.OnPlayerReady then
+				spawn(function()
+					module.OnPlayerReady(player)
+				end)
+			end
+		end
+	end)
 end

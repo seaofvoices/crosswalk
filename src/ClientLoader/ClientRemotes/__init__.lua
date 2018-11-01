@@ -7,5 +7,6 @@ private.YieldUntilNewKey = require(script.YieldUntilNewKey)(ClientRemotes, priva
 
 ClientRemotes.ConnectRemote = require(script.ConnectRemote)(ClientRemotes, private)
 ClientRemotes.Init = require(script.Init)(ClientRemotes, private)
+ClientRemotes.Ready = require(script.Ready)(ClientRemotes, private)
 
 return ClientRemotes

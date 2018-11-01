@@ -8,8 +8,6 @@ return function(Modules, ServerModules, Services)
 
 	function module.Start()
 		print('ClientTest.Start()')
-		wait(1)
-		module.RunTests()
 	end
 
 	function module.GetValueFromClient_func()
@@ -36,7 +34,7 @@ return function(Modules, ServerModules, Services)
 		print('TestClientCanCallServerFunction (risky) got', ServerModules.ServerTest.GetValueFromServerRisky())
 	end
 
-	function module.RunTests()
+	function module.RunTests_event()
 		warn('CLIENT HAS STARTED TESTS. CHECK IF ALL STRINGS ARE EQUAL')
 		print(' ')
 

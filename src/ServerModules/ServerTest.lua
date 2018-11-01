@@ -10,6 +10,12 @@ return function(Modules, ClientModules, Services)
 		print('ServerTest.Start()')
 	end
 
+	function module.OnPlayerReady(player)
+		print('ServerTest.OnPlayerReady()')
+		print('Starting tests from server to', player.Name)
+		ClientModules.ClientTest.RunTests(player)
+	end
+
 	function module.GetValueFromServer_func(plr)
 		return true, 'server value'
 	end
