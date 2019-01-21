@@ -1,3 +1,5 @@
+local Players = game:GetService('Players')
+
 local Services = require(script:WaitForChild('ClientServices'))
 local ClientRemotes = require(script:WaitForChild('ClientRemotes'))
 
@@ -70,4 +72,12 @@ return function(configuration)
 	end
 
 	ClientRemotes.Ready()
+
+	for _, module in pairs(ClientModules) do
+		if module.OnPlayerReady then
+			spawn(function()
+				module.OnPlayerReady(Players.LocalPlayer)
+			end)
+		end
+	end
 end
