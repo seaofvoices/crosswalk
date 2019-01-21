@@ -61,24 +61,17 @@ return function()
 		local AddEventToClient = loader({}, private)
 		local fire, fireAll = AddEventToClient('moduleName', 'funcName')
 
-		local remote = private.remoteFolder:FindFirstChildOfClass('RemoteEvent')
-
 		it('should be functions', function()
 			expect(fire).to.be.a('function')
 			expect(fireAll).to.be.a('function')
 		end)
 
-		it('should throw when calling without a player', function()
+		it('should throw when calling the first function without a player', function()
 			expect(fire).to.throw()
 		end)
 
-		it('should call `FireAllClients()`', function()
-			local called = false
-			remote.OnClientEvent:Connect(function()
-				called = true
-			end)
+		it('should not need a player when using the second function', function()
 			fireAll()
-			expect(called).to.equal(true)
 		end)
 	end)
 end

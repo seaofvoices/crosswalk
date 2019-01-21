@@ -1,4 +1,6 @@
 return function(ServerRemotes, private)
+	local Players = game:GetService('Players')
+
 	return function()
 		private.remoteFolder = Instance.new('Folder')
 		private.remoteFolder.Name = 'Remotes'
@@ -10,6 +12,7 @@ return function(ServerRemotes, private)
 		private.remotesToServer = {}
 		private.playerKeys = {}
 		private.remoteCallMaxDelay = 2
+		private.isPlayerReadyMap = {}
 
 		private.onKeyError = function(plr, moduleName, functionName)
 			warn(('Player <%s> (id:%d) sent a wrong key to %s.%s'):format(
@@ -28,7 +31,12 @@ return function(ServerRemotes, private)
 		end
 
 		private.onKeyMissing = function(plr, moduleName, functionName)
-			warn(('Player <%s> (id:%d) is asking again for remote Ids and keys.'):format(plr.Name, plr.UserId))
+			warn(('Player <%s> (id:%d) forgot to send a key when calling %s.%s().'):format(
+				plr.Name,
+				plr.UserId,
+				moduleName,
+				functionName
+			))
 		end
 
 		private.onPlayerReady = function()
@@ -53,8 +61,13 @@ return function(ServerRemotes, private)
 		private.playerReady = Instance.new('RemoteEvent')
 		private.playerReady.Name = private.GetUniqueId() .. '    '
 		private.playerReady.OnServerEvent:Connect(function(player)
+			private.isPlayerReadyMap[player] = true
 			private.onPlayerReady(player)
 		end)
 		private.playerReady.Parent = private.remoteFolder
+
+		Players.PlayerRemoving:Connect(function(player)
+			private.isPlayerReadyMap[player] = nil
+		end)
 	end
 end

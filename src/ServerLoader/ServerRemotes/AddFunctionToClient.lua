@@ -13,25 +13,35 @@ return function(ServerRemotes, private)
 		private.remotesToClient[moduleName] = private.remotesToClient[moduleName] or {}
 		private.remotesToClient[moduleName][functionName] = remote
 
-		return function(plr, ...)
-			assert(plr:IsA('Player'), 'plr has to be a Player')
-			return remote:InvokeClient(plr, ...)
+		return function(player, ...)
+			assert(
+				typeof(player) == 'Instance' and player:IsA('Player'),
+				('first argument must be a Player (in function call %s.%s)'):format(moduleName, functionName)
+			)
+			if private.isPlayerReadyMap[player] then
+				return remote:InvokeClient(player, ...)
+			end
 		end, function(...)
 			local args = {...}
 			local results = {}
 			local totalPlayers = 0
 			local totalResults = 0
-			for plr in ipairs(private.playerKeys) do
-				totalPlayers = totalPlayers + 1
-				spawn(function()
-					results[plr] = remote:InvokeClient(plr, unpack(args))
-					totalResults = totalResults + 1
-				end)
+
+			for player in ipairs(private.playerKeys) do
+				if private.isPlayerReadyMap[player] then
+					totalPlayers = totalPlayers + 1
+					spawn(function()
+						results[player] = remote:InvokeClient(player, unpack(args))
+						totalResults = totalResults + 1
+					end)
+				end
 			end
+
 			local startTime = tick()
 			repeat
 				wait()
 			until totalResults == totalPlayers or (tick() - startTime) > private.remoteCallMaxDelay
+
 			return totalResults == totalPlayers, results
 		end
 	end

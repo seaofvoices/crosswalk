@@ -1,4 +1,6 @@
 return function(ServerRemotes, private)
+	local Players = game:GetService('Players')
+
 	return function(moduleName, functionName)
 		private.nameServerMap[moduleName] = false
 
@@ -13,11 +15,20 @@ return function(ServerRemotes, private)
 		private.remotesToClient[moduleName] = private.remotesToClient[moduleName] or {}
 		private.remotesToClient[moduleName][functionName] = remote
 
-		return function(plr, ...)
-			assert(plr:IsA('Player'), 'plr has to be a Player')
-			remote:FireClient(plr, ...)
+		return function(player, ...)
+			assert(
+				typeof(player) == 'Instance' and player:IsA('Player'),
+				('first argument must be a Player (in function call %s.%s)'):format(moduleName, functionName)
+			)
+			if private.isPlayerReadyMap[player] then
+				remote:FireClient(player, ...)
+			end
 		end, function(...)
-			remote:FireAllClients(...)
+			for _, player in ipairs(Players:GetPlayers()) do
+				if private.isPlayerReadyMap[player] then
+					remote:FireClient(player, ...)
+				end
+			end
 		end
 	end
 end
