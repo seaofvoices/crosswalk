@@ -103,7 +103,7 @@ return function(configuration)
 		end
 	end
 
-	ServerRemotes.Subscribe("PlayerReady", function(player)
+	ServerRemotes.Subscribe('PlayerReady', function(player)
 		for _, module in pairs(ServerModules) do
 			if module.OnPlayerReady then
 				spawn(function()
