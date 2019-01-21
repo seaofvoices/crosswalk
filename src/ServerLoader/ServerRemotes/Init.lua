@@ -15,7 +15,6 @@ return function(ServerRemotes, private)
 			warn(('Player <%s> (id:%d) sent a wrong key to %s.%s'):format(
 				plr.Name, plr.UserId, moduleName, functionName
 			))
-			error('yoloy')
 		end
 
 		private.onFunctionError = function(plr, moduleName, functionName)
