@@ -39,9 +39,7 @@ return function(ServerRemotes, private)
 			))
 		end
 
-		private.onPlayerReady = function()
-			error('PlayerReady event has not been subscribed')
-		end
+		private.onPlayerReady = nil
 
 		private.dataSender = Instance.new('RemoteFunction')
 		private.dataSender.Name = private.GetUniqueId() .. '  '
@@ -61,6 +59,9 @@ return function(ServerRemotes, private)
 		private.playerReady = Instance.new('RemoteEvent')
 		private.playerReady.Name = private.GetUniqueId() .. '    '
 		private.playerReady.OnServerEvent:Connect(function(player)
+			while not private.onPlayerReady do
+				wait()
+			end
 			private.isPlayerReadyMap[player] = true
 			private.onPlayerReady(player)
 		end)
