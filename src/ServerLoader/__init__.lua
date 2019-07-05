@@ -103,6 +103,16 @@ return function(configuration)
 		end
 	end
 
+	Services.Players.PlayerRemoving:Connect(function(player)
+		for _, module in pairs(ServerModules) do
+			if module.OnPlayerLeaving then
+				spawn(function()
+					module.OnPlayerLeaving(player)
+				end)
+			end
+		end
+	end)
+
 	ServerRemotes.Subscribe('PlayerReady', function(player)
 		for _, module in pairs(ServerModules) do
 			if module.OnPlayerReady then

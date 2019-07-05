@@ -56,7 +56,8 @@ return function()
 			remotesToClient = {},
 			remoteFolder = Instance.new('Folder'),
 			GetRemoteName = function() return 'remoteName' end,
-			GetUniqueId = function() return 'publicId' end
+			GetUniqueId = function() return 'publicId' end,
+			isPlayerReadyMap = {},
 		}
 		local AddEventToClient = loader({}, private)
 		local fire, fireAll = AddEventToClient('moduleName', 'funcName')
