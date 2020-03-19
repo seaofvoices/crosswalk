@@ -1,0 +1,46 @@
+{
+    "name": "crosswalk",
+    "servePort": 34872,
+    "tree": {
+        "$className": "DataModel",
+        "HttpService": {
+            "$className": "HttpService",
+            "$properties": {
+                "HttpEnabled": true
+            }
+        },
+        "ReplicatedFirst": {
+            "$className": "ReplicatedFirst",
+            "ClientLoader": {
+                "$path": "src/ClientLoader"
+            },
+            "ClientMain": {
+                "$path": "src/ClientMain.client.lua"
+            }
+        },
+        "ReplicatedStorage": {
+            "$className": "ReplicatedStorage",
+            "ClientModules": {
+                "$path": "src/ClientModules"
+            },
+            "SharedModules": {
+                "$path": "src/SharedModules"
+            }
+        },
+        "ServerScriptService": {
+            "$className": "ServerScriptService",
+            "Main": {
+                "$path": "src/Main.server.lua"
+            }
+        },
+        "ServerStorage": {
+            "$className": "ServerStorage",
+            "ServerModules": {
+                "$path": "src/ServerModules"
+            },
+            "ServerLoader": {
+                "$path": "src/ServerLoader"
+            }
+        }
+    }
+}

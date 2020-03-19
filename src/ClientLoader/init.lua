@@ -23,7 +23,7 @@ return function(configuration)
 	local SharedModules = {}
 	local ServerModules = {}
 
-	ClientRemotes.Init(ServerModules)
+	ClientRemotes.Initialize(ServerModules)
 
 	for _, moduleScript in ipairs(configuration.SharedFolder:GetChildren()) do
 		local module = requireModule(moduleScript, false, SharedModules, Services)
