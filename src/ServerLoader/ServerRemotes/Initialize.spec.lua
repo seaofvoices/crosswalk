@@ -5,9 +5,9 @@ return function()
 			return 'uniqueId'
 		end
 	}
-	local Init = loader({}, private)
+	local Initialize = loader({}, private)
 
-	Init()
+	Initialize()
 
 	it('should create a folder for the remotes', function()
 		expect(private.remoteFolder).to.be.a('userdata')
