@@ -6,7 +6,18 @@ return setmetatable({
 	ServerStorage = game:GetService('ServerStorage'),
 	SoundService = game:GetService('SoundService'),
 	Workspace = game:GetService('Workspace')
-}, {__index = function(t, service)
-	t[service] = game:GetService(service)
-	return t[service]
-end})
+}, {
+    __index = function(t, serviceName)
+        local success, service = pcall(function()
+            return game:GetService(serviceName)
+        end)
+
+        if not success then
+            error(('Cannot find service %q: %s'):format(serviceName, service))
+        end
+
+        t[serviceName] = service
+
+        return service
+    end
+})
