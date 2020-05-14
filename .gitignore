@@ -1,0 +1,8 @@
+/luacov.*
+/site
+/*.rbxlx
+/*.rbxmx
+/*.rbxm
+/*.rbxl
+
+build

@@ -1,4 +1,4 @@
-return function(isServer, SharedModules, Services)
+return function(SharedModules, Services, isServer)
 	local module = {}
 	local private = {}
 

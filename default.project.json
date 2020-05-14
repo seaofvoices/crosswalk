@@ -21,10 +21,13 @@
         "ReplicatedStorage": {
             "$className": "ReplicatedStorage",
             "ClientModules": {
-                "$path": "src/ClientModules"
+                "$path": "test-place/ClientModules"
             },
             "SharedModules": {
-                "$path": "src/SharedModules"
+                "$path": "test-place/SharedModules"
+            },
+            "TestEZ": {
+                "$path": "modules/testez"
             }
         },
         "ServerScriptService": {
@@ -36,7 +39,7 @@
         "ServerStorage": {
             "$className": "ServerStorage",
             "ServerModules": {
-                "$path": "src/ServerModules"
+                "$path": "test-place/ServerModules"
             },
             "ServerLoader": {
                 "$path": "src/ServerLoader"
