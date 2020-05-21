@@ -1,0 +1,6 @@
+{
+    "name": "crosswalk-client",
+    "tree": {
+        "$path": "../src/ClientMain.client.lua"
+    }
+}

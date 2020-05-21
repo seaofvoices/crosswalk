@@ -1,15 +1,74 @@
-image: python:3.6
+image: python:3.8
 
 stages:
+  - build
   - test
+  - pre-deploy
+  - deploy
+
+before_script: &set-run-permission
+  - chmod -R +x ./bin
+
+.only-mr-and-master: &only-mr-and-master
+  only:
+    - master
+    - merge_requests
+
+.rust-setup:
+  image: rust:latest
+  variables:
+    CARGO_HOME: $CI_PROJECT_DIR/.cargo
+    CARGO_INSTALL_ROOT: $CI_PROJECT_DIR/.cargo-install
+  before_script:
+    - *set-run-permission
+    - export PATH=$PATH:$PWD/.cargo-install/bin
+  cache:
+    paths:
+      - .cargo
+      - .cargo-install
 
 luacheck:
   stage: test
   script:
-  - apt-get update
-  - apt-get install -y zip unzip
-  - pip install hererocks
-  - hererocks lua_install -l 5.1 -r latest
-  - export PATH=$PATH:$PWD/lua_install/bin
-  - luarocks install luacheck
-  - luacheck src
+    - ./bin/install-lua.sh
+    - export PATH=$PATH:$PWD/lua_install/bin
+    - luacheck src
+  <<: *only-mr-and-master
+  needs: []
+
+build-assets:
+  stage: build
+  extends: .rust-setup
+  script:
+    - cargo install rojo
+    - cargo install --git https://github.com/rojo-rbx/remodel.git
+    - ./bin/build-assets.sh
+  artifacts:
+    paths:
+      - build
+  <<: *only-mr-and-master
+
+build-docs:
+  stage: pre-deploy
+  script:
+    - python -m pip install -r requirements.txt
+    - mkdir -p ./docs/releases
+    - rm -rf ./docs/releases/master
+    - cp -rf ./build ./docs/releases/master
+    - mkdocs build
+  artifacts:
+    paths:
+      - site
+  <<: *only-mr-and-master
+  needs: ['build-assets']
+
+pages:
+  stage: deploy
+  script:
+    - mv site public
+  artifacts:
+    paths:
+      - public
+  only:
+    - master
+  needs: ['build-docs']

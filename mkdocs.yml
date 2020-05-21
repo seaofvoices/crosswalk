@@ -1,0 +1,34 @@
+site_name: crosswalk
+site_url: https://seaofvoices.gitlab.io/crosswalk/
+repo_name: seaofvoices/crosswalk
+repo_url: https://gitlab.com/seaofvoices/crosswalk
+edit_uri: ''
+
+theme:
+  name: material
+  icon:
+    logo: material/walk
+    repo: fontawesome/brands/gitlab
+  favicon: images/walk.png
+  palette:
+    scheme: slate
+    primary: orange
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+  - awesome-pages:
+      collapse_single_pages: true

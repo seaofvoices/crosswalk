@@ -1,0 +1,47 @@
+[data-md-color-scheme="slate"] {
+    --md-default-bg-color: rgb(27, 26, 26);
+    --md-accent-fg-color: rgb(255, 234, 117);
+    --md-code-bg-color: rgb(39, 37, 35);
+
+    --md-footer-bg-color: rgb(20, 20, 20);
+    --md-footer-bg-color--dark: rgb(5, 5, 5);
+}
+
+/* keywords */
+.codehilite .kr, .highlight .kr, .codehilite .kd, .highlight .kd {
+    color: #6497f7;
+}
+
+/* string */
+.codehilite .s1, .highlight .s1 {
+    color: #ff84ec;
+}
+
+/* line highlight */
+.codehilite .hll, .highlight .hll {
+    background-color: rgba(145, 132, 18, 0.79);
+}
+
+/* function */
+.codehilite .nf, .highlight .nf, .codehilite .nc, .highlight .nc, .codehilite .nb, .highlight .nb {
+    color: #ff8080;
+}
+
+.md-typeset .tabbed-set > input:checked + label {
+    color: var(--md-primary-fg-color);
+    border-color: var(--md-primary-fg-color);
+}
+
+.md-typeset__table {
+    display: flex;
+    justify-content: center;
+}
+
+.md-typeset table:not([class]) {
+    width: auto;
+    background-color: rgb(39, 37, 35);
+}
+
+.md-content__inner > p {
+    text-align: justify;
+}

@@ -5,4 +5,5 @@
 /*.rbxm
 /*.rbxl
 
-build
+build/
+docs/releases/master
