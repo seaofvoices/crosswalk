@@ -47,10 +47,6 @@ return function(configuration)
 		local module = requireModule(moduleScript, sharedModules, Services, true)
 		sharedModules[moduleName] = module
 		serverModules[moduleName] = module
-
-		if module.Init then
-			module.Init()
-		end
 	end
 
 	for _, moduleScript in ipairs(configuration.ServerModules) do
@@ -94,11 +90,19 @@ return function(configuration)
 		end
 
 		serverModules[moduleName] = module
+	end
 
+	for _, module in pairs(sharedModules) do
 		if module.Init then
 			module.Init()
 		end
-	end
+    end
+
+	for name, module in pairs(serverModules) do
+		if sharedModules[name] == nil and module.Init then
+			module.Init()
+		end
+    end
 
 	for _, moduleScript in ipairs(configuration.ClientModules) do
 		local moduleName = moduleScript.Name
@@ -119,7 +123,7 @@ return function(configuration)
 			moduleName
 		)
 
-		local module = requireModule(moduleScript, {}, Services)
+		local module = requireModule(moduleScript, {}, {}, Services)
 
 		local api = {}
 
@@ -166,9 +170,9 @@ return function(configuration)
 	Services.Players.PlayerRemoving:Connect(function(player)
 		for _, module in pairs(serverModules) do
 			if module.OnPlayerLeaving then
-				spawn(function()
+				coroutine.wrap(function()
 					module.OnPlayerLeaving(player)
-				end)
+				end)()
 			end
 		end
 	end)
@@ -176,9 +180,9 @@ return function(configuration)
 	ServerRemotes.Subscribe('PlayerReady', function(player)
 		for _, module in pairs(serverModules) do
 			if module.OnPlayerReady then
-				spawn(function()
+				coroutine.wrap(function()
 					module.OnPlayerReady(player)
-				end)
+				end)()
 			end
 		end
 	end)

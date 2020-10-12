@@ -47,10 +47,6 @@ return function(configuration)
 		local module = requireModule(moduleScript, sharedModules, Services, false)
 		sharedModules[moduleName] = module
 		clientModules[moduleName] = module
-
-		if module.Init then
-			module.Init()
-		end
 	end
 
 	for _, moduleScript in ipairs(configuration.ClientModules) do
@@ -90,11 +86,19 @@ return function(configuration)
 		end
 
 		clientModules[moduleName] = module
+	end
 
+	for _, module in pairs(sharedModules) do
 		if module.Init then
 			module.Init()
 		end
-	end
+    end
+
+	for name, module in pairs(clientModules) do
+		if sharedModules[name] == nil and module.Init then
+			module.Init()
+		end
+    end
 
 	for _, module in pairs(clientModules) do
 		if module.Start then
@@ -106,9 +110,9 @@ return function(configuration)
 
 	for _, module in pairs(clientModules) do
 		if module.OnPlayerReady then
-			spawn(function()
+			coroutine.wrap(function()
 				module.OnPlayerReady(Players.LocalPlayer)
-			end)
+			end)()
 		end
 	end
 end
