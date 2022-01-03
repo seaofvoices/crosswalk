@@ -13,14 +13,17 @@ After, all you need to do is insert three folders into the game that will contai
 
 ## Roblox Models
 
-You can also download these Roblox model files and insert them into your game.
+You can also download these Roblox model files and insert them into your game. These models are built from the latest main branch.
 
-| asset | current master version |
-| -- | -- |
-| Client Loader | [client-loader.rbxm](../releases/master/client-loader.rbxm) |
-| Server Loader | [server-loader.rbxm](../releases/master/server-loader.rbxm) |
-| Client Main | [client-main.rbxm](../releases/master/client-main.rbxm) |
-| Server Main| [server-main.rbxm](../releases/master/server-main.rbxm) |
+| asset | develop | production |
+| -- | -- | -- |
+| Client Loader | [client-loader.rbxm](../releases/master/debug/client-loader.rbxm) | [client-loader.rbxm](../releases/master/client-loader.rbxm) |
+| Server Loader | [server-loader.rbxm](../releases/master/debug/server-loader.rbxm) | [server-loader.rbxm](../releases/master/server-loader.rbxm) |
+| Client Main | [client-main.rbxm](../releases/master/debug/client-main.rbxm) | [client-main.rbxm](../releases/master/client-main.rbxm) |
+| Server Main| [server-main.rbxm](../releases/master/debug/server-main.rbxm) | [server-main.rbxm](../releases/master/server-main.rbxm) |
+
+!!! Important
+    The difference between the develop and production builds is that warnings and verifications are removed from the production builds.
 
 ## As a Git Submodule
 

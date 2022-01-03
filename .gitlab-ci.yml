@@ -1,55 +1,101 @@
 image: python:3.8
 
 stages:
+  - download
+  - install
   - build
   - test
   - pre-deploy
   - deploy
-
-before_script: &set-run-permission
-  - chmod -R +x ./bin
 
 .only-mr-and-master: &only-mr-and-master
   only:
     - master
     - merge_requests
 
-.rust-setup:
-  image: rust:latest
+foreman:
+  image: curlimages/curl:latest
+  stage: download
   variables:
-    CARGO_HOME: $CI_PROJECT_DIR/.cargo
-    CARGO_INSTALL_ROOT: $CI_PROJECT_DIR/.cargo-install
-  before_script:
-    - *set-run-permission
-    - export PATH=$PATH:$PWD/.cargo-install/bin
-  cache:
+    FOREMAN_VERSION: https://github.com/jeparlefrancais/foreman/releases/download/v1.0.2-alpha/foreman-1.0.2-alpha-linux.zip
+  script:
+    - echo download foreman at $FOREMAN_VERSION
+    - curl $FOREMAN_VERSION -L -o foreman.zip
+    - unzip foreman.zip
+    - mkdir downloads
+    - mv foreman downloads/
+    - chmod +x ./downloads/foreman
+  artifacts:
     paths:
-      - .cargo
-      - .cargo-install
+      - downloads
+    expire_in: 1 week
+  <<: *only-mr-and-master
+  needs: []
+
+tools:
+  stage: install
+  script:
+    - export PATH=$PATH:./downloads
+    - foreman --version
+    - foreman install
+    - ls ~/.foreman/bin
+    - mkdir tools
+    - mv ~/.foreman/bin/* tools
+  artifacts:
+    paths:
+      - tools
+    expire_in: 1 week
+  <<: *only-mr-and-master
+  needs:
+    - foreman
+
+.tools-path: &tools-path
+  before_script:
+    - export PATH=$PATH:$(realpath tools)
+
+selene-lint:
+  stage: test
+  <<: *only-mr-and-master
+  <<: *tools-path
+  script:
+    - selene generate-roblox-std
+    - selene src/ServerLoader src/Main.server.lua src/ClientMain.client.lua
+  needs:
+    - tools
+
+style-check:
+  stage: test
+  <<: *only-mr-and-master
+  <<: *tools-path
+  script:
+    - stylua --check src/ServerLoader src/Main.server.lua
+  needs:
+    - tools
 
 luacheck:
   stage: test
   script:
-    - ./bin/install-lua.sh
+    - ./scripts/install-lua.sh
     - export PATH=$PATH:$PWD/lua_install/bin
-    - luacheck src
+    - luacheck src/ClientLoader
   <<: *only-mr-and-master
   needs: []
 
 build-assets:
   stage: build
-  extends: .rust-setup
+  <<: *only-mr-and-master
+  <<: *tools-path
   script:
-    - cargo install rojo
-    - cargo install --git https://github.com/rojo-rbx/remodel.git
-    - ./bin/build-assets.sh
+    - ./scripts/build-assets.sh
   artifacts:
     paths:
       - build
-  <<: *only-mr-and-master
+  needs:
+    - tools
 
 build-docs:
   stage: pre-deploy
+  <<: *only-mr-and-master
   script:
     - python -m pip install -r requirements.txt
     - mkdir -p ./docs/releases
@@ -59,8 +105,8 @@ build-docs:
   artifacts:
     paths:
       - site
-  <<: *only-mr-and-master
-  needs: ['build-assets']
+  needs:
+    - build-assets
 
 pages:
   stage: deploy
@@ -71,4 +117,5 @@ pages:
       - public
   only:
     - master
-  needs: ['build-docs']
+  needs:
+    - build-docs

@@ -34,6 +34,10 @@ return function(Modules, ServerModules, Services)
 		print('TestClientCanCallServerFunction (risky) got', ServerModules.ServerTest.GetValueFromServerRisky())
 	end
 
+	function module.AskTriggerUnapproved_event()
+		ServerModules.ServerTest.TriggerUnapproved()
+	end
+
 	function module.RunTests_event()
 		warn('CLIENT HAS STARTED TESTS. CHECK IF ALL STRINGS ARE EQUAL')
 		print(' ')

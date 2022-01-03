@@ -1,0 +1,32 @@
+return function()
+    local getSecurity = require(script.Parent.getSecurity)
+
+    it('should return `None` if the given name contains `_danger`', function()
+        expect(getSecurity('test_danger')).to.equal('None')
+        expect(getSecurity('test_danger_event')).to.equal('None')
+        expect(getSecurity('test_danger_func')).to.equal('None')
+        expect(getSecurity('_danger')).to.equal('None')
+    end)
+
+    it('should return `Low` if the given name contains `_risky`', function()
+        expect(getSecurity('test_risky')).to.equal('Low')
+        expect(getSecurity('test_risky_event')).to.equal('Low')
+        expect(getSecurity('test_risky_func')).to.equal('Low')
+        expect(getSecurity('_risky')).to.equal('Low')
+    end)
+
+    it('should work with an empty string', function()
+        expect(function()
+            getSecurity('')
+        end).never.to.throw()
+    end)
+
+    it('should return `High` when it does not match any other pattern', function()
+        expect(getSecurity('')).to.equal('High')
+        expect(getSecurity('function')).to.equal('High')
+        expect(getSecurity('hey_test')).to.equal('High')
+        expect(getSecurity('test_func')).to.equal('High')
+        expect(getSecurity('danger_event')).to.equal('High')
+        expect(getSecurity('risky_event')).to.equal('High')
+    end)
+end

@@ -215,6 +215,11 @@ The function is now exposed to any client modules.
     end
     ```
 
+!!! Important
+    This validation is **required**. Any function exposed to clients using `_func` or `_event` must return `true` or `false` to indicate that the function was called with normal values in the right context. This is crucial to be able to react to bad actors that are bypassing the game systems and trying to manually trigger remote functions or remote events.
+
+    This relates to the [special function `OnUnapprovedExecution`](Functions.md#onunapprovedexecution) that is automatically called when this validation process fails.
+
 ## Calling Exposed Functions
 
 Even if the function ends a suffix, exposed functions are called without their suffix. That means that if a function is declared as `DoSomething_event`, `DoSomething_risky_event` or with any other suffix, you can call it using only `DoSomething`.

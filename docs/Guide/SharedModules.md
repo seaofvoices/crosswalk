@@ -33,7 +33,7 @@ return function(SharedModules, Services, isServer)
 end
 ```
 
-You can access the ModuleA from any other module server module by using `SharedModules.ModuleA`:
+You can access the ModuleA from any other module by getting it from the `SharedModules` table as `SharedModules.ModuleA`:
 
 ```lua hl_lines="6"
 -- SharedModules/ModuleB.lua

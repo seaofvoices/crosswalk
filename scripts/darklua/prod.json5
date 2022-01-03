@@ -1,0 +1,18 @@
+{
+  process: [
+    "remove_comments",
+    "remove_spaces",
+    {
+      rule: "inject_global_value",
+      identifier: "DEV",
+      value: false,
+    },
+    "compute_expression",
+    "remove_unused_if_branch",
+    "remove_unused_while",
+    "rename_variables",
+    "remove_empty_do",
+    "remove_method_definition",
+    "remove_function_call_parens",
+  ],
+}

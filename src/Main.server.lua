@@ -3,20 +3,35 @@ local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
 local ServerLoader = require(ServerStorage:WaitForChild('ServerLoader'))
 
-local function GetModules(folder)
-	local filtered = {}
+local function getModules(folder)
+    local filtered = {}
 
-	for _, script in ipairs(folder:GetChildren()) do
-		if script:IsA('ModuleScript') and not script.Name:match('.+%.spec$') then
-			table.insert(filtered, script)
-		end
-	end
+    for _, script in ipairs(folder:GetChildren()) do
+        if script:IsA('ModuleScript') and not script.Name:match('.+%.spec$') then
+            table.insert(filtered, script)
+        end
+    end
 
-	return filtered
+    return filtered
 end
 
-ServerLoader({
-	ServerModules = GetModules(ServerStorage:WaitForChild('ServerModules')),
-	ClientModules = GetModules(ReplicatedStorage:WaitForChild('ClientModules')),
-	SharedModules = GetModules(ReplicatedStorage:WaitForChild('SharedModules')),
+local server = ServerLoader.new({
+    serverModules = getModules(ServerStorage:WaitForChild('ServerModules')),
+    clientModules = getModules(ReplicatedStorage:WaitForChild('ClientModules')),
+    sharedModules = getModules(ReplicatedStorage:WaitForChild('SharedModules')),
+    onSecondPlayerRequest = function(_player) end,
+    onKeyError = function(_player, _moduleName, _functionName) end,
+    onKeyMissing = function(_player, _moduleName, _functionName) end,
+    onUnapprovedExecution = function(player, info)
+        warn(
+            ('Function %s.%s called by player `%s` (id:%d) was not approved'):format(
+                info.moduleName,
+                info.functionName,
+                player.Name,
+                player.UserId
+            )
+        )
+    end,
+    remoteCallMaxDelay = 2,
 })
+server:start()

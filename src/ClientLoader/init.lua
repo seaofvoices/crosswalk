@@ -100,16 +100,22 @@ return function(configuration)
 		end
     end
 
-	for _, module in pairs(clientModules) do
+	for _, module in pairs(sharedModules) do
 		if module.Start then
 			module.Start()
 		end
-	end
+    end
+
+	for name, module in pairs(clientModules) do
+		if sharedModules[name] == nil and module.Start then
+			module.Start()
+		end
+    end
 
 	ClientRemotes.Ready()
 
-	for _, module in pairs(clientModules) do
-		if module.OnPlayerReady then
+	for moduleName, module in pairs(clientModules) do
+		if module.OnPlayerReady and sharedModules[moduleName] == nil then
 			coroutine.wrap(function()
 				module.OnPlayerReady(Players.LocalPlayer)
 			end)()

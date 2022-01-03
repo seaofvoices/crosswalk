@@ -1,9 +1,14 @@
 /luacov.*
 /site
-/*.rbxlx
-/*.rbxmx
-/*.rbxm
 /*.rbxl
+/*.rbxlx
+/*.rbxl.lock
+/*.rbxlx.lock
+/*.rbxm
+/*.rbxmx
 
 build/
+test-places/
 docs/releases/master
+
+**/roblox.toml

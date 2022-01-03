@@ -77,6 +77,7 @@ end
 | name | parameters | description |
 | -- | -- | -- |
 | Init | | First function called |
-| Start | | Called after `Init`, and after all `Init` from other Client modules |
+| Start | | Called after all `Init` functions |
 | OnPlayerReady | [Player](https://developer.roblox.com/en-us/api-reference/class/Player) | Called after `Init` and `Start` with the local player |
 | OnPlayerLeaving | [Player](https://developer.roblox.com/en-us/api-reference/class/Player) | Called when a player leaves the game (only in server modules) |
+| OnUnapprovedExecution | [Player](https://developer.roblox.com/en-us/api-reference/class/Player), info table | Called when a player calls a server module function that does not validate |

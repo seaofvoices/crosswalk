@@ -16,30 +16,39 @@ return function(Modules, ClientModules, Services)
 		ClientModules.ClientTest.RunTests(player)
 	end
 
-	function module.GetValueFromServer_func(plr)
+	function module.OnUnapprovedExecution(player, info)
+		print('OnUnapprovedExecution', player.Name, "-", info.functionName)
+	end
+
+	function module.GetValueFromServer_func(_player)
 		return true, 'server value'
 	end
 
-	function module.GetValueFromServerDanger_danger_func(plr)
+	function module.GetValueFromServerDanger_danger_func(_player)
 		return true, 'server danger value'
 	end
 
-	function module.GetValueFromServerRisky_risky_func(plr)
+	function module.GetValueFromServerRisky_risky_func(_player)
 		return true, 'server risky value'
 	end
 
-	function module.PrintToServer_event(plr, ...)
-		print('PrintToServer:', plr, ...)
+	function module.TriggerUnapproved_event(player, ...)
+		print('TriggerUnapproved:', player, ...)
+		return false
+	end
+
+	function module.PrintToServer_event(player, ...)
+		print('PrintToServer:', player, ...)
 		return true
 	end
 
-	function module.PrintToServerDanger_danger_event(plr, ...)
-		print('PrintToServerDanger:', plr, ...)
+	function module.PrintToServerDanger_danger_event(player, ...)
+		print('PrintToServerDanger:', player, ...)
 		return true
 	end
 
-	function module.PrintToServerRisky_risky_event(plr, ...)
-		print('PrintToServerRisky:', plr, ...)
+	function module.PrintToServerRisky_risky_event(player, ...)
+		print('PrintToServerRisky:', player, ...)
 		return true
 	end
 
@@ -51,8 +60,8 @@ return function(Modules, ClientModules, Services)
 		print('TestClientCanCallServerFunction got ', ClientModules.ClientTest.GetValueFromServer())
 	end
 
-	function module.RunTests_event(plr)
-		warn('STARTING SERVER TESTS FROM ' .. plr.Name)
+	function module.RunTests_event(player)
+		warn('STARTING SERVER TESTS FROM ' .. player.Name)
 		print('\n')
 
 		print('SharedTest.PrintShared(server):', 'hello from server')
@@ -71,24 +80,28 @@ return function(Modules, ClientModules, Services)
 		print(module.GetValueFromServerRisky())
 		print('\n')
 
-		print('PrintToServer:', plr, '- success')
-		module.PrintToServer(plr, '- success')
+		print('PrintToServer:', player, '- success')
+		module.PrintToServer(player, '- success')
 		print('\n')
 
-		print('PrintToServerDanger:', plr, '- success')
-		module.PrintToServerDanger(plr, '- success')
+		print('PrintToServerDanger:', player, '- success')
+		module.PrintToServerDanger(player, '- success')
 		print('\n')
 
-		print('PrintToServerRisky:', plr, '- success')
-		module.PrintToServerRisky(plr, '- success')
+		print('PrintToServerRisky:', player, '- success')
+		module.PrintToServerRisky(player, '- success')
 		print('\n')
 
 		print('client value')
-		print(ClientModules.ClientTest.GetValueFromClient(plr))
+		print(ClientModules.ClientTest.GetValueFromClient(player))
 		print('\n')
 
-		print('Client print:', plr, 'hello!')
-		ClientModules.ClientTest.PrintToClient(plr, plr, 'hello!')
+		print('Client print:', player, 'hello!')
+		ClientModules.ClientTest.PrintToClient(player, player, 'hello!')
+		print('\n')
+
+		print('Ask client to trigger unapproved rquest', player)
+		ClientModules.ClientTest.AskTriggerUnapproved(player, player, 'hello!')
 		print('\n')
 
 		warn('END OF SERVER TESTS.')

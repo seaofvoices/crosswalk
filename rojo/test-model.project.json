@@ -1,0 +1,21 @@
+{
+    "name": "crosswalk",
+    "tree": {
+        "$className": "DataModel",
+        "HttpService": {
+            "$className": "HttpService",
+            "$properties": {
+                "HttpEnabled": true
+            }
+        },
+        "ReplicatedStorage": {
+            "$className": "ReplicatedStorage",
+            "Model": {
+                "$path": "../build/model.rbxm"
+            },
+            "TestEZ": {
+                "$path": "../modules/testez"
+            }
+        }
+    }
+}
