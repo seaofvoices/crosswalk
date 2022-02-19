@@ -1,1 +1,1 @@
-return require(script.ServerLoader)
+return require(script:FindFirstChild('ServerLoader'))

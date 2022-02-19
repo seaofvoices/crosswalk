@@ -1,7 +1,7 @@
 return function()
     local KeyStorage = require(script.Parent.KeyStorage)
 
-    local ReporterBuilder = require(script.Parent.TestUtils.ReporterBuilder)
+    local ReporterBuilder = require(script.Parent.Common.TestUtils.ReporterBuilder)
 
     local PLAYER_NAME = 'oof'
 

@@ -1,6 +1,9 @@
 {
     "name": "ServerLoader",
     "tree": {
-        "$path": "../src/ServerLoader"
+        "$path": "../src/ServerLoader",
+        "Common": {
+            "$path": "../src/Common"
+        }
     }
 }

@@ -53,3 +53,4 @@ rm build/model.rbxm
 # remove tests
 
 remodel run remove-tests build
+remodel run remove-by-name TestUtils build

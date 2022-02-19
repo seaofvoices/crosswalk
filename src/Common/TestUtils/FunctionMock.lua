@@ -8,17 +8,22 @@ local FunctionMockMetatable = {
 
 function FunctionMock:getFunctionValue()
     local function logger(...)
-        self:call(...)
+        return self:call(...)
     end
     return logger
 end
 
-function FunctionMock:returnSameValue(returnValue)
-    local function logger(...)
-        self:call(...)
-        return returnValue
+function FunctionMock:returnSameValue(...)
+    local returnValues = table.pack(...)
+    self._innerCall = function()
+        return unpack(returnValues, 1, returnValues.n)
     end
-    return logger
+    return self:getFunctionValue()
+end
+
+function FunctionMock:setMockImplementation(callback)
+    self._innerCall = callback
+    return self:getFunctionValue()
 end
 
 function FunctionMock:call(...)
@@ -26,6 +31,9 @@ function FunctionMock:call(...)
         arguments = { ... },
         argumentCount = select('#', ...),
     })
+    if self._innerCall then
+        return self._innerCall(...)
+    end
 end
 
 function FunctionMock:expectCalls(expect, expectedCalls)
@@ -56,6 +64,7 @@ end
 local function new()
     return setmetatable({
         calls = {},
+        _innerCall = nil,
     }, FunctionMockMetatable)
 end
 

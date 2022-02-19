@@ -1,13 +1,17 @@
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
-local createKey = require(script.Parent.createKey)
-local createKeySender = require(script.Parent.createKeySender)
-local KeyStorage = require(script.Parent.KeyStorage)
-local ModuleLoader = require(script.Parent.ModuleLoader)
-local RemoteStorage = require(script.Parent.RemoteStorage)
-local Reporter = require(script.Parent.Reporter)
-local ServerRemotes = require(script.Parent.ServerRemotes)
-local Services = require(script.Parent.Services)
+local ServerLoaderModule = script.Parent
+local Common = ServerLoaderModule:FindFirstChild('Common')
+
+local createKey = require(ServerLoaderModule:FindFirstChild('createKey'))
+local createKeySender = require(ServerLoaderModule:FindFirstChild('createKeySender'))
+local KeyStorage = require(ServerLoaderModule:FindFirstChild('KeyStorage'))
+local ModuleLoader = require(ServerLoaderModule:FindFirstChild('ModuleLoader'))
+local RemoteStorage = require(ServerLoaderModule:FindFirstChild('RemoteStorage'))
+local ServerRemotes = require(ServerLoaderModule:FindFirstChild('ServerRemotes'))
+local Services = require(ServerLoaderModule:FindFirstChild('Services'))
+
+local Reporter = require(Common:FindFirstChild('Reporter'))
 
 local DEFAULT_REMOTE_CALL_MAX_DELAY = 2
 
@@ -77,7 +81,15 @@ local function new(configuration)
     local remoteParent = Instance.new('Folder')
     remoteParent.Name = 'Remotes'
 
-    local reporter = configuration.reporter or Reporter.default()
+    local reporter = configuration.reporter
+    if reporter == nil then
+        if configuration.logLevel == nil then
+            reporter = Reporter.default()
+        else
+            reporter = Reporter.fromLogLevel(configuration.logLevel)
+        end
+    end
+
     local remoteStorage = RemoteStorage.new(remoteParent)
 
     local isPlayerReadyMap = {}

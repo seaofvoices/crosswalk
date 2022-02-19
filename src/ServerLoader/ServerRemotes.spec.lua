@@ -1,10 +1,11 @@
 return function()
     local ServerRemotes = require(script.Parent.ServerRemotes)
 
+    local Common = script.Parent.Common
     local KeyStorage = require(script.Parent.KeyStorage)
     local RemoteStorage = require(script.Parent.RemoteStorage)
-    local Reporter = require(script.Parent.Reporter)
-    local Mocks = require(script.Parent.TestUtils.Mocks)
+    local Reporter = require(Common.Reporter)
+    local Mocks = require(Common.TestUtils.Mocks)
 
     local calls = nil
     local function getCallLogger(name, list)
@@ -53,12 +54,13 @@ return function()
         }
     end
 
-    local playerMock = {}
-    local otherPlayerMock
+    local playerMock = nil
+    local otherPlayerMock = nil
     beforeEach(function()
         calls = {}
         playerMock = Mocks.Player.new()
         otherPlayerMock = Mocks.Player.new()
+        otherPlayerMock.Name = 'OtherPlayer'
     end)
 
     local remoteToClientCases = {
@@ -78,12 +80,16 @@ return function()
             local remoteStorageMock
             local firePlayer
             local fireAllPlayers
+            local playerReady
             beforeEach(function()
+                playerReady = {
+                    [playerMock] = true,
+                }
                 remoteStorageMock = newRemoteStorageMock()
                 local serverRemotes = newServerRemotes({
                     remoteStorage = remoteStorageMock,
                     isPlayerReady = function(player)
-                        return player == playerMock
+                        return playerReady[player] == true
                     end,
                     playersService = {
                         GetPlayers = function()
@@ -118,7 +124,8 @@ return function()
                     expect(function()
                         firePlayer(true)
                     end).to.throw(
-                        'first argument must be a Player in function call `module.process` (got boolean)'
+                        'first argument must be a Player in function call `module.process` '
+                            .. '(got `true` of type boolean)'
                     )
                 end)
             else
@@ -157,7 +164,46 @@ return function()
                         remote[info.remoteMethod] = function()
                             error('an error happened')
                         end
-                        firePlayer(playerMock)
+                        expect(function()
+                            firePlayer(playerMock)
+                        end).never.to.throw()
+                    end)
+
+                    it('catches errors from one player when calling all players', function()
+                        playerReady[otherPlayerMock] = true
+                        local remote = remoteStorageMock.event
+                        remote[info.remoteMethod] = function(_self, player)
+                            if player == playerMock then
+                                error('an error happened')
+                            end
+                            return 'value'
+                        end
+                        local allCalled = nil
+                        expect(function()
+                            allCalled = fireAllPlayers(playerMock)
+                        end).never.to.throw()
+
+                        expect(allCalled).to.equal(false)
+                    end)
+                end
+
+                if info.remoteClass == 'RemoteFunction' then
+                    it('collects player results', function()
+                        local remote = remoteStorageMock.event
+                        remote[info.remoteMethod] = function(_self, player)
+                            return 'value', player
+                        end
+                        local allCalled = nil
+                        local results = nil
+                        expect(function()
+                            allCalled, results = fireAllPlayers(playerMock)
+                        end).never.to.throw()
+
+                        expect(allCalled).to.equal(true)
+                        expect(results).to.be.a('table')
+                        expect(results[playerMock].n).to.equal(2)
+                        expect(results[playerMock][1]).to.equal('value')
+                        expect(results[playerMock][2]).to.equal(playerMock)
                     end)
                 end
             end
@@ -177,7 +223,7 @@ return function()
             remoteMethod = 'InvokeClient',
             fireRemote = function(remote, ...)
                 if remote.OnServerInvoke then
-                    remote.OnServerInvoke(...)
+                    return remote.OnServerInvoke(...)
                 end
             end,
         },

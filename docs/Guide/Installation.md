@@ -4,7 +4,7 @@ crosswalk has two necessary dependency, the client loader and the server loader.
 
 | asset | parent instance |
 | -- | -- |
-| Client Loader | [ReplicatedFirst](https://developer.roblox.com/en-us/api-reference/class/ReplicatedFirst) |
+| Client Loader | [ReplicatedStorage](https://developer.roblox.com/en-us/api-reference/class/ReplicatedStorage) |
 | Server Loader | [ServerStorage](https://developer.roblox.com/en-us/api-reference/class/ServerStorage) |
 | Client Main | [ReplicatedFirst](https://developer.roblox.com/en-us/api-reference/class/ReplicatedFirst) |
 | Server Main| [ServerScriptService](https://developer.roblox.com/en-us/api-reference/class/ServerScriptService) |
@@ -43,12 +43,15 @@ If you are using [Rojo](https://rojo.space/) to sync (or build) your project, al
         "$className": "DataModel",
         "ReplicatedFirst": {
             "$className": "ReplicatedFirst",
-            "ClientLoader": {
-                "$path": "path/to/crosswalk/src/ClientLoader"
-            },
             "ClientMain": {
                 "$path": "path/to/crosswalk/src/ClientMain.client.lua"
             }
+        },
+        "ReplicatedStorage": {
+            "$className": "ReplicatedStorage",
+            "ClientLoader": {
+                "$path": "path/to/crosswalk/src/ClientLoader"
+            },
         },
         "ServerScriptService": {
             "$className": "ServerScriptService",

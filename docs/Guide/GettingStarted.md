@@ -2,9 +2,9 @@
 
 ## How It Works
 
-crosswalk is a framework that handles the communication between clients and server. It abstracts all the remote events and remote functions your game can need.
+crosswalk is a framework that handles the communication between clients and server. It abstracts all the remote events and remote functions your game needs.
 
-You don't have to call crosswalk, instead it will load your modules and initialize everything for you. In order to that, modules need to have a specific structure that crosswalk can understand. The basic structure is really simple, all you need is to define a function that will build the module.
+You don't have to call crosswalk. Instead, it will load your modules and initialize everything for you. In order to do that, modules need to have a specific structure that crosswalk can understand. The basic structure is really simple, all you need is to define a function that will build the module.
 
 There is more information in the next pages about how to create crosswalk modules, but here is a quick preview of what it looks like:
 
@@ -45,7 +45,7 @@ There is more information in the next pages about how to create crosswalk module
     end
     ```
 
-So each [ModuleScripts](https://developer.roblox.com/en-us/api-reference/class/ModuleScript) has to return a function that crosswalk will use to build a table that contains the real module functions. It is those functions, like the `DoSomething` function in the previous example, that will be accessible from other crosswalk modules.
+Each crosswalk module is a [ModuleScript](https://developer.roblox.com/en-us/api-reference/class/ModuleScript) that returns a function to build a table that contains the actual module functions. It is those functions, like the `DoSomething` function in the previous example, that will be accessible from other crosswalk modules.
 
 ## Project Structure
 

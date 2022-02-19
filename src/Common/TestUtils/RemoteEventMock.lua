@@ -14,9 +14,14 @@ function RemoteEventMock:FireServer(...)
     return self.mocks.FireServer:call(...)
 end
 
+function RemoteEventMock:IsA(className)
+    return className == 'RemoteEvent'
+end
+
 local function new()
     return setmetatable({
         Name = 'RemoteEvent',
+        OnClientEvent = EventMock.new(),
         OnServerEvent = EventMock.new(),
         mocks = {
             FireClient = FunctionMock.new(),

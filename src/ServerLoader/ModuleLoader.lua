@@ -1,31 +1,47 @@
-local getSecurity = require(script.Parent.getSecurity)
-local Reporter = require(script.Parent.Reporter)
-local Services = require(script.Parent.Services)
+local ServerLoaderModule = script.Parent
+local Common = ServerLoaderModule:FindFirstChild('Common')
 
-local function requireModule(moduleScript, ...)
-    local success, moduleLoader = pcall(require, moduleScript)
-    if not success then
-        error(('Error while loading module %q : %s'):format(moduleScript.Name, moduleLoader))
-    end
-
-    local loaded, module = pcall(moduleLoader, ...)
-    if not loaded then
-        error(('Error while calling the module loader %q : %s'):format(moduleScript.Name, module))
-    end
-
-    return module
-end
+local getSecurity = require(ServerLoaderModule:FindFirstChild('getSecurity'))
+local Services = require(ServerLoaderModule:FindFirstChild('Services'))
+local Reporter = require(Common:FindFirstChild('Reporter'))
+local requireModule = require(Common:FindFirstChild('requireModule'))
+local validateSharedModule = require(Common:FindFirstChild('validateSharedModule'))
+local extractFunctionName = require(Common:FindFirstChild('extractFunctionName'))
 
 local EVENT_PATTERN = '_event$'
 local FUNCTION_PATTERN = '_func$'
-local SPECIAL_FUNCTIONS = {
-    OnPlayerReady = { server = true, client = true },
-    OnPlayerLeaving = { server = true },
-    OnUnapprovedExecution = { server = true },
-}
 
-local function extractFunctionName(name)
-    return name:match('^(.-)_')
+local function validateReturnedValues(values, reporter, context)
+    local validated = values[1]
+    if typeof(validated) ~= 'boolean' then
+        reporter:warn(
+            'function `%s.%s` should return a boolean to indicate '
+                .. 'whether the call was approved or not, but got '
+                .. '`%s` (of type `%s`).\n\n'
+                .. 'Learn more about server modules function '
+                .. 'validation at: %s',
+            context.moduleName,
+            context.functionName,
+            tostring(validated),
+            typeof(validated),
+            'https://crosswalk.seaofvoices.ca/Guide/ServerModules/#validation'
+        )
+    elseif not validated then
+        local source, line, callerName = debug.info(3, 'sln')
+        if callerName == '' or callerName == nil then
+            callerName = '<anonymous function>'
+        end
+        reporter:warn(
+            'function `%s.%s` is declared as an exposed remote, '
+                .. 'but the validation failed when calling '
+                .. 'it from `%s` at line %d in server module `%s`',
+            context.moduleName,
+            context.functionName,
+            callerName,
+            line,
+            source
+        )
+    end
 end
 
 local ModuleLoader = {}
@@ -38,6 +54,46 @@ function ModuleLoader:loadModules()
     )
 
     self.reporter:debug('loading shared modules')
+    self:_loadSharedModules()
+
+    self.reporter:debug('loading server modules')
+    self:_loadServerModules()
+
+    self.reporter:debug('calling `Init` for shared modules')
+    for _, module in pairs(self.shared) do
+        if module.Init then
+            module.Init()
+        end
+    end
+
+    self.reporter:debug('calling `Init` for server modules')
+    for name, module in pairs(self.server) do
+        if self.shared[name] == nil and module.Init then
+            module.Init()
+        end
+    end
+
+    self.reporter:debug('setup remotes for client modules')
+    self:_setupClientRemotes()
+
+    self.reporter:debug('calling `Start` for shared modules')
+    for _, module in pairs(self.shared) do
+        if module.Start then
+            module.Start()
+        end
+    end
+
+    self.reporter:debug('calling `Start` for server modules')
+    for name, module in pairs(self.server) do
+        if self.shared[name] == nil and module.Start then
+            module.Start()
+        end
+    end
+
+    self._hasLoaded = true
+end
+
+function ModuleLoader:_loadSharedModules()
     for _, moduleScript in ipairs(self.sharedScripts) do
         local moduleName = moduleScript.Name
 
@@ -50,59 +106,15 @@ function ModuleLoader:loadModules()
         local module = self.requireModule(moduleScript, self.shared, self.services, true)
 
         if _G.DEV then
-            for property, value in pairs(module) do
-                if
-                    (property:match(EVENT_PATTERN) or property:match(FUNCTION_PATTERN))
-                    and typeof(value) == 'function'
-                then
-                    self.reporter:warn(
-                        'shared module %q has a function %q that is meant to exist on client or server modules. '
-                            .. 'It should probably be renamed to %q',
-                        moduleName,
-                        property,
-                        extractFunctionName(property)
-                    )
-                end
-            end
-
-            for functionName, info in pairs(SPECIAL_FUNCTIONS) do
-                if module[functionName] then
-                    local destination = {}
-                    if info.server then
-                        table.insert(destination, 'a server module')
-                    end
-                    if info.client then
-                        table.insert(destination, 'a client module')
-                    end
-
-                    local messageEnd = ''
-
-                    if #destination == 1 then
-                        messageEnd = ' into ' .. destination[1]
-                    elseif #destination > 1 then
-                        local last = table.remove(destination)
-                        messageEnd = (' into %s or %s'):format(
-                            table.concat(destination, ', '),
-                            last
-                        )
-                    end
-
-                    self.reporter:warn(
-                        'shared module %q has a `%s` function defined that will not be called automatically. '
-                            .. 'This function should be removed or the logic should be moved%s.',
-                        moduleName,
-                        functionName,
-                        messageEnd
-                    )
-                end
-            end
+            validateSharedModule(module, moduleName, self.reporter)
         end
 
         self.shared[moduleName] = module
         self.server[moduleName] = module
     end
+end
 
-    self.reporter:debug('loading server modules')
+function ModuleLoader:_loadServerModules()
     for _, moduleScript in ipairs(self.serverScripts) do
         local moduleName = moduleScript.Name
 
@@ -120,56 +132,100 @@ function ModuleLoader:loadModules()
         local api = {}
         local module = self.requireModule(moduleScript, self.server, self.client, self.services)
 
-        for funcName, func in pairs(module) do
+        for functionName, func in pairs(module) do
             if type(func) == 'function' then
-                if funcName:match(EVENT_PATTERN) then
-                    local name = extractFunctionName(funcName)
+                local name = nil
+                local serverToServerFunction = nil
+
+                if functionName:match(EVENT_PATTERN) then
+                    name = extractFunctionName(functionName)
                     self.serverRemotes:addEventToServer(
                         moduleName,
                         name,
                         func,
-                        getSecurity(funcName)
+                        getSecurity(functionName)
                     )
-                    api[name] = function(...)
-                        return select(2, func(...))
+                    serverToServerFunction = function(...)
+                        if _G.DEV then
+                            local values = table.pack(func(...))
+                            validateReturnedValues(values, self.reporter, {
+                                moduleName = moduleName,
+                                functionName = functionName,
+                                moduleFunction = func,
+                            })
+
+                            if values.n > 1 then
+                                self.reporter:warn(
+                                    'function `%s.%s` is declared as an exposed remote '
+                                        .. 'event, but it is returning more than the '
+                                        .. 'required validation boolean.\n\nTo make this '
+                                        .. 'function return values to clients, replace '
+                                        .. 'the `_event` suffix with `_func`. If the '
+                                        .. 'function does not need to return values, '
+                                        .. 'remove them as they are ignored by crosswalk',
+                                    moduleName,
+                                    functionName
+                                )
+                            end
+                        else
+                            func(...)
+                        end
                     end
-                elseif funcName:match(FUNCTION_PATTERN) then
-                    local name = extractFunctionName(funcName)
+                elseif functionName:match(FUNCTION_PATTERN) then
+                    name = extractFunctionName(functionName)
                     self.serverRemotes:addFunctionToServer(
                         moduleName,
                         name,
                         func,
-                        getSecurity(funcName)
+                        getSecurity(functionName)
                     )
-                    api[name] = function(...)
-                        return select(2, func(...))
+                    serverToServerFunction = function(...)
+                        if _G.DEV then
+                            local values = table.pack(func(...))
+                            validateReturnedValues(values, self.reporter, {
+                                moduleName = moduleName,
+                                functionName = functionName,
+                                moduleFunction = func,
+                            })
+
+                            return unpack(values, 2, values.n)
+                        else
+                            return select(2, func(...))
+                        end
                     end
+                end
+
+                if name then
+                    self.reporter:assert(
+                        api[name] == nil,
+                        'server module named %q has defined two functions that resolves to the '
+                            .. 'same name `%s`. Rename one of them or remove an unused one',
+                        moduleName,
+                        name
+                    )
+                    self.reporter:assert(
+                        module[name] == nil,
+                        'server module named %q already has a %s named `%s` that collides '
+                            .. 'with the generated function from `%s`',
+                        moduleName,
+                        typeof(api[name]) == 'function' and 'function' or 'value',
+                        name,
+                        functionName
+                    )
+                    api[name] = serverToServerFunction
                 end
             end
         end
 
-        for k, v in pairs(api) do
-            module[k] = v
+        for name, newFunction in pairs(api) do
+            module[name] = newFunction
         end
 
         self.server[moduleName] = module
     end
+end
 
-    self.reporter:debug('calling `Init` for shared modules')
-    for _, module in pairs(self.shared) do
-        if module.Init then
-            module.Init()
-        end
-    end
-
-    self.reporter:debug('calling `Init` for server modules')
-    for name, module in pairs(self.server) do
-        if self.shared[name] == nil and module.Init then
-            module.Init()
-        end
-    end
-
-    self.reporter:debug('setup remotes for client modules')
+function ModuleLoader:_setupClientRemotes()
     for _, moduleScript in ipairs(self.clientScripts) do
         local moduleName = moduleScript.Name
 
@@ -193,50 +249,65 @@ function ModuleLoader:loadModules()
 
         local api = {}
 
-        for funcName, func in pairs(module) do
+        for functionName, func in pairs(module) do
             if type(func) == 'function' then
-                if funcName:match('_event$') then
-                    local name = funcName:match('(.+)_event$')
-                    local nameForAll = name .. 'All'
+                local name = nil
+                local callClient = nil
+                local callAllClients = nil
 
+                if functionName:match('_event$') then
+                    name = functionName:match('(.+)_event$')
+                    callClient, callAllClients = self.serverRemotes:addEventToClient(
+                        moduleName,
+                        name
+                    )
+                elseif functionName:match('_func$') then
+                    name = functionName:match('(.+)_func$')
+                    callClient, callAllClients = self.serverRemotes:addFunctionToClient(
+                        moduleName,
+                        name
+                    )
+                end
+
+                if name then
+                    self.reporter:assert(
+                        api[name] == nil,
+                        'client module named %q has defined two functions that resolves to the '
+                            .. 'same name `%s`: `%s` and `%s`. Rename one of them or remove an '
+                            .. 'unused one',
+                        moduleName,
+                        name,
+                        name .. '_event',
+                        name .. '_func'
+                    )
+                    local nameForAll = name .. 'All'
+                    self.reporter:assert(
+                        module[name] == nil,
+                        'client module named %q already has a %s named `%s` that collides '
+                            .. 'with the generated function from `%s`',
+                        moduleName,
+                        typeof(api[name]) == 'function' and 'function' or 'value',
+                        name,
+                        functionName
+                    )
                     self.reporter:assert(
                         module[nameForAll] == nil,
-                        'module named %q already has a function named %q',
-                        moduleName
+                        'client module named %q already has a %s named `%s` that collides '
+                            .. 'with the generated function from `%s`',
+                        moduleName,
+                        typeof(api[name]) == 'function' and 'function' or 'value',
+                        nameForAll,
+                        functionName
                     )
 
-                    api[name], api[name .. 'All'] = self.serverRemotes:addEventToClient(
-                        moduleName,
-                        name
-                    )
-                elseif funcName:match('_func$') then
-                    local name = funcName:match('(.+)_func$')
-                    api[name], api[name .. 'All'] = self.serverRemotes:addFunctionToClient(
-                        moduleName,
-                        name
-                    )
+                    api[name] = callClient
+                    api[nameForAll] = callAllClients
                 end
             end
         end
 
         self.client[moduleName] = api
     end
-
-    self.reporter:debug('calling `Start` for shared modules')
-    for _, module in pairs(self.shared) do
-        if module.Start then
-            module.Start()
-        end
-    end
-
-    self.reporter:debug('calling `Start` for server modules')
-    for name, module in pairs(self.server) do
-        if self.shared[name] == nil and module.Start then
-            module.Start()
-        end
-    end
-
-    self._hasLoaded = true
 end
 
 function ModuleLoader:onPlayerReady(player)

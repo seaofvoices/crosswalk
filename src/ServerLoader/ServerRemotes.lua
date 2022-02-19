@@ -1,7 +1,10 @@
 local Players = game:GetService('Players')
 
-local Map2D = require(script.Parent.Map2D)
-local Reporter = require(script.Parent.Reporter)
+local ServerLoaderModule = script.Parent
+local Common = ServerLoaderModule:FindFirstChild('Common')
+
+local Map2D = require(ServerLoaderModule:FindFirstChild('Map2D'))
+local Reporter = require(Common:FindFirstChild('Reporter'))
 
 local ServerRemotes = {}
 local ServerRemotesMetatable = { __index = ServerRemotes }
@@ -16,9 +19,10 @@ function ServerRemotes:addEventToClient(moduleName, functionName)
         if _G.DEV then
             self.reporter:assert(
                 typeof(player) == 'Instance' and player:IsA('Player'),
-                'first argument must be a Player in function call `%s.%s` (got %s)',
+                'first argument must be a Player in function call `%s.%s` (got `%s` of type %s)',
                 moduleName,
                 functionName,
+                tostring(player),
                 typeof(player)
             )
         end
@@ -48,9 +52,10 @@ function ServerRemotes:addFunctionToClient(moduleName, functionName)
         if _G.DEV then
             self.reporter:assert(
                 typeof(player) == 'Instance' and player:IsA('Player'),
-                'first argument must be a Player in function call `%s.%s` (got %s)',
+                'first argument must be a Player in function call `%s.%s` (got `%s` of type %s)',
                 moduleName,
                 functionName,
+                tostring(player),
                 typeof(player)
             )
         end
@@ -69,9 +74,10 @@ function ServerRemotes:addFunctionToClient(moduleName, functionName)
             if self.isPlayerReady(player) then
                 totalPlayers = totalPlayers + 1
                 task.spawn(function(...)
-                    local result = select(2, pcall(remote.InvokeClient, remote, player, ...))
-                    if isCollecting then
-                        results[player] = result
+                    local result = table.pack(pcall(remote.InvokeClient, remote, player, ...))
+                    local success = result[1]
+                    if isCollecting and success then
+                        results[player] = table.pack(unpack(result, 2, result.n))
                         totalResults = totalResults + 1
                     end
                 end, ...)
@@ -140,9 +146,9 @@ function ServerRemotes:addFunctionToServer(moduleName, functionName, func, secur
 
     if security == 'None' then
         function remote.OnServerInvoke(player, ...)
-            local results = { func(player, ...) }
+            local results = table.pack(func(player, ...))
             if results[1] then
-                return unpack(results, 2)
+                return unpack(results, 2, results.n)
             else
                 task.spawn(self.onUnapprovedExecution, player, moduleName, functionName)
             end
@@ -151,9 +157,9 @@ function ServerRemotes:addFunctionToServer(moduleName, functionName, func, secur
         function remote.OnServerInvoke(player, key, ...)
             if self.keyStorage:verifyKey(player, moduleName, functionName, key) then
                 self.keyStorage:setNewKey(player, moduleName, functionName)
-                local results = { func(player, ...) }
+                local results = table.pack(func(player, ...))
                 if results[1] then
-                    return unpack(results, 2)
+                    return unpack(results, 2, results.n)
                 else
                     task.spawn(self.onUnapprovedExecution, player, moduleName, functionName)
                 end
@@ -162,9 +168,9 @@ function ServerRemotes:addFunctionToServer(moduleName, functionName, func, secur
     elseif security == 'Low' then
         function remote.OnServerInvoke(player, key, ...)
             if self.keyStorage:verifyKey(player, moduleName, functionName, key) then
-                local results = { func(player, ...) }
+                local results = table.pack(func(player, ...))
                 if results[1] then
-                    return unpack(results, 2)
+                    return unpack(results, 2, results.n)
                 else
                     task.spawn(self.onUnapprovedExecution, player, moduleName, functionName)
                 end

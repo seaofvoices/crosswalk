@@ -95,9 +95,35 @@ local function debug()
     })
 end
 
+local function errorOnly()
+    return new({
+        onError = logError,
+        onWarn = nil,
+        onInfo = nil,
+        onDebug = nil,
+    })
+end
+
+local function fromLogLevel(level)
+    if level == 'warn' then
+        return default()
+    elseif level == 'error' then
+        return errorOnly()
+    elseif level == 'info' then
+        return info()
+    elseif level == 'debug' then
+        return debug()
+    else
+        error('invalid value for `logError`: expected `error`, `warn`, `info` or `debug`')
+    end
+end
+
 return {
     new = new,
     default = default,
     debug = debug,
     info = info,
+    error = errorOnly,
+    warn = default,
+    fromLogLevel = fromLogLevel,
 }

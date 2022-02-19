@@ -10,12 +10,17 @@ function RemoteFunctionMock:InvokeClient(...)
 end
 
 function RemoteFunctionMock:InvokeServer(...)
-    return self.mocks.FireServer:call(...)
+    return self.mocks.InvokeServer:call(...)
+end
+
+function RemoteFunctionMock:IsA(className)
+    return className == 'RemoteFunction'
 end
 
 local function new()
     return setmetatable({
-        Name = 'RemoteEvent',
+        Name = 'RemoteFunction',
+        OnClientInvoke = nil,
         OnServerInvoke = nil,
         mocks = {
             InvokeClient = FunctionMock.new(),

@@ -1,21 +1,22 @@
-local ReplicatedFirst = game:GetService('ReplicatedFirst')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
-local ClientLoader = require(ReplicatedFirst:WaitForChild('ClientLoader'))
+local ClientLoader = require(ReplicatedStorage:WaitForChild('ClientLoader'))
 
-local function GetModules(folder)
-	local filtered = {}
+local function getModules(folder)
+    local filtered = {}
 
-	for _, script in ipairs(folder:GetChildren()) do
-		if script:IsA('ModuleScript') and not script.Name:match('.+%.spec$') then
-			table.insert(filtered, script)
-		end
-	end
+    for _, script in ipairs(folder:GetChildren()) do
+        if script:IsA('ModuleScript') and not script.Name:match('.+%.spec$') then
+            table.insert(filtered, script)
+        end
+    end
 
-	return filtered
+    return filtered
 end
 
-ClientLoader({
-	ClientModules = GetModules(ReplicatedStorage:WaitForChild('ClientModules')),
-	SharedModules = GetModules(ReplicatedStorage:WaitForChild('SharedModules')),
+local clientLoader = ClientLoader.new({
+    clientModules = getModules(ReplicatedStorage:WaitForChild('ClientModules')),
+    sharedModules = getModules(ReplicatedStorage:WaitForChild('SharedModules')),
+    logLevel = nil, -- can be 'error', 'warn', 'info' or 'debug' (default is 'warn')
 })
+clientLoader:start()

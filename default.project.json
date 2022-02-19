@@ -10,15 +10,15 @@
         },
         "ReplicatedFirst": {
             "$className": "ReplicatedFirst",
-            "ClientLoader": {
-                "$path": "src/ClientLoader"
-            },
             "ClientMain": {
-                "$path": "src/ClientMain.client.lua"
+                "$path": "rojo/client-main.project.json"
             }
         },
         "ReplicatedStorage": {
             "$className": "ReplicatedStorage",
+            "ClientLoader": {
+                "$path": "rojo/client-loader.project.json"
+            },
             "ClientModules": {
                 "$path": "test-place/ClientModules"
             },
@@ -32,7 +32,7 @@
         "ServerScriptService": {
             "$className": "ServerScriptService",
             "Main": {
-                "$path": "src/Main.server.lua"
+                "$path": "rojo/server-main.project.json"
             }
         },
         "ServerStorage": {
@@ -41,7 +41,7 @@
                 "$path": "test-place/ServerModules"
             },
             "ServerLoader": {
-                "$path": "src/ServerLoader"
+                "$path": "rojo/server-loader.project.json"
             }
         }
     }

@@ -19,6 +19,7 @@ local server = ServerLoader.new({
     serverModules = getModules(ServerStorage:WaitForChild('ServerModules')),
     clientModules = getModules(ReplicatedStorage:WaitForChild('ClientModules')),
     sharedModules = getModules(ReplicatedStorage:WaitForChild('SharedModules')),
+    logLevel = nil, -- can be 'error', 'warn', 'info' or 'debug' (default is 'warn')
     onSecondPlayerRequest = function(_player) end,
     onKeyError = function(_player, _moduleName, _functionName) end,
     onKeyMissing = function(_player, _moduleName, _functionName) end,

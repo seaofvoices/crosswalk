@@ -1,5 +1,5 @@
-local createKey = require(script.Parent.createKey)
-local Map2D = require(script.Parent.Map2D)
+local createKey = require(script.Parent:FindFirstChild('createKey'))
+local Map2D = require(script.Parent:FindFirstChild('Map2D'))
 
 local RemoteStorage = {}
 local RemoteStorageMetatable = { __index = RemoteStorage }

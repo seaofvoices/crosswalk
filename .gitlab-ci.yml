@@ -59,7 +59,7 @@ selene-lint:
   <<: *tools-path
   script:
     - selene generate-roblox-std
-    - selene src/ServerLoader src/Main.server.lua src/ClientMain.client.lua
+    - selene src
   needs:
     - tools
 
@@ -68,18 +68,9 @@ style-check:
   <<: *only-mr-and-master
   <<: *tools-path
   script:
-    - stylua --check src/ServerLoader src/Main.server.lua
+    - stylua --check src
   needs:
     - tools
-
-luacheck:
-  stage: test
-  script:
-    - ./scripts/install-lua.sh
-    - export PATH=$PATH:$PWD/lua_install/bin
-    - luacheck src/ClientLoader
-  <<: *only-mr-and-master
-  needs: []
 
 build-assets:
   stage: build

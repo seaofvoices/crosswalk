@@ -1,7 +1,7 @@
 return function()
     local ModuleLoader = require(script.Parent.ModuleLoader)
 
-    local TestUtils = script.Parent.TestUtils
+    local TestUtils = script.Parent.Common.TestUtils
     local Mocks = require(TestUtils.Mocks)
     local ReporterBuilder = require(TestUtils.ReporterBuilder)
 
@@ -128,6 +128,41 @@ return function()
             )
         end)
 
+        it('throws if a client module name is used also for a shared module', function()
+            local moduleLoader = newModuleLoader({
+                client = { moduleA },
+                shared = { moduleA },
+            })
+            expect(function()
+                moduleLoader:loadModules()
+            end).to.throw(
+                'client module named "A" was already registered as a shared module'
+            )
+        end)
+
+        it('throws if a client module name is used also for a server module', function()
+            local moduleLoader = newModuleLoader({
+                client = { moduleA },
+                server = { moduleA },
+            })
+            expect(function()
+                moduleLoader:loadModules()
+            end).to.throw(
+                'client module named "A" was already registered as a server module'
+            )
+        end)
+
+        it('throws if a client module name is used twice', function()
+            local moduleLoader = newModuleLoader({
+                client = { moduleA, moduleA },
+            })
+            expect(function()
+                moduleLoader:loadModules()
+            end).to.throw(
+                'client module named "A" was already registered as a client module'
+            )
+        end)
+
         local CASES = {
             test_event = {
                 type = 'event',
@@ -167,7 +202,11 @@ return function()
                 beforeEach(function()
                     serverRemotesMock = createServerRemotesMock()
                     moduleMocks[moduleA][concreteName] = function(arg)
-                        return true, 'ok:' .. arg
+                        if info.type == 'function' then
+                            return true, 'ok:' .. arg
+                        else
+                            return true
+                        end
                     end
                     local moduleLoader = newModuleLoader({
                         server = { moduleA },
@@ -190,8 +229,13 @@ return function()
                 end)
 
                 it('adds a function to call it from another server module', function()
-                    expect(moduleMocks[moduleA][info.name]).to.be.a('function')
-                    expect(moduleMocks[moduleA][info.name]('0')).to.equal('ok:0')
+                    local callback = moduleMocks[moduleA][info.name]
+                    expect(callback).to.be.a('function')
+                    if info.type == 'function' then
+                        expect(callback('0')).to.equal('ok:0')
+                    else
+                        expect(callback).never.to.throw()
+                    end
                 end)
             end)
 
@@ -220,11 +264,9 @@ return function()
                         expect(#reporterMock.events).to.equal(1)
                         expect(reporterMock.events[1].message).to.equal(
                             (
-                                'shared module "A" has a function "%s" that is meant to exist on client '
-                            ):format(concreteName)
-                                .. ('or server modules. It should probably be renamed to "%s"'):format(
-                                    info.name
-                                )
+                                'shared module "A" has a function "%s" that is meant to exist on '
+                                .. 'client or server modules. It should probably be renamed to "%s"'
+                            ):format(concreteName, info.name)
                         )
                         expect(reporterMock.events[1].level).to.equal('warn')
                     end)
@@ -295,6 +337,134 @@ return function()
                     )
                     expect(reporterMock.events[1].level).to.equal('warn')
                 end)
+            end)
+
+            describe('warn for bad usage', function()
+                local reporterMock
+                beforeEach(function()
+                    reporterMock = ReporterBuilder.new():onlyWarn():build()
+                    moduleMocks[moduleA] = generateModule('A', {
+                        OnPlayerReady = false,
+                        OnPlayerLeaving = false,
+                    })
+                end)
+
+                it('warns when an `_event` function returns more than one value', function()
+                    moduleMocks[moduleA].forgetValidation_event = function()
+                        return true, 'result'
+                    end
+                    local moduleLoader = newModuleLoader({
+                        server = { moduleA },
+                        reporter = reporterMock,
+                    })
+                    moduleLoader:loadModules()
+
+                    expect(moduleMocks[moduleA].forgetValidation).to.be.a('function')
+
+                    moduleMocks[moduleA].forgetValidation()
+
+                    expect(#reporterMock.events).to.equal(1)
+                    expect(reporterMock.events[1].message).to.equal(
+                        'function `A.forgetValidation_event` is declared as an exposed remote '
+                            .. 'event, but it is returning more than the '
+                            .. 'required validation boolean.\n\nTo make this '
+                            .. 'function return values to clients, replace '
+                            .. 'the `_event` suffix with `_func`. If the '
+                            .. 'function does not need to return values, '
+                            .. 'remove them as they are ignored by crosswalk'
+                    )
+                    expect(reporterMock.events[1].level).to.equal('warn')
+                end)
+
+                local functionExtensions = {
+                    '_event',
+                    '_func',
+                }
+
+                for _, extension in ipairs(functionExtensions) do
+                    local functionName = 'forgetValidation' .. extension
+
+                    it(('warns when a `%s` function returns nothing'):format(extension), function()
+                        moduleMocks[moduleA][functionName] = function() end
+                        local moduleLoader = newModuleLoader({
+                            server = { moduleA },
+                            reporter = reporterMock,
+                        })
+                        moduleLoader:loadModules()
+
+                        expect(moduleMocks[moduleA].forgetValidation).to.be.a('function')
+
+                        moduleMocks[moduleA].forgetValidation()
+
+                        expect(#reporterMock.events).to.equal(1)
+                        expect(reporterMock.events[1].message).to.equal(
+                            ('function `A.%s` should return a boolean '):format(functionName)
+                                .. 'to indicate whether the call was approved or not, but got '
+                                .. '`nil` (of type `nil`).\n\nLearn more about server modules '
+                                .. 'function validation at: '
+                                .. 'https://crosswalk.seaofvoices.ca/Guide/ServerModules/#validation'
+                        )
+                        expect(reporterMock.events[1].level).to.equal('warn')
+                    end)
+
+                    it(
+                        ('warns when a `%s` function does not return a boolean'):format(extension),
+                        function()
+                            moduleMocks[moduleA][functionName] = function()
+                                return 1
+                            end
+                            local moduleLoader = newModuleLoader({
+                                server = { moduleA },
+                                reporter = reporterMock,
+                            })
+                            moduleLoader:loadModules()
+
+                            expect(moduleMocks[moduleA].forgetValidation).to.be.a('function')
+
+                            moduleMocks[moduleA].forgetValidation()
+
+                            expect(#reporterMock.events).to.equal(1)
+                            expect(reporterMock.events[1].message).to.equal(
+                                ('function `A.%s` should return a boolean '):format(functionName)
+                                    .. 'to indicate whether the call was approved or not, but got '
+                                    .. '`1` (of type `number`).\n\nLearn more about server modules '
+                                    .. 'function validation at: '
+                                    .. 'https://crosswalk.seaofvoices.ca/Guide/ServerModules/#validation'
+                            )
+                            expect(reporterMock.events[1].level).to.equal('warn')
+                        end
+                    )
+
+                    it(('warns when a `%s` function does not succeed'):format(extension), function()
+                        moduleMocks[moduleA][functionName] = function()
+                            return false
+                        end
+                        local moduleLoader = newModuleLoader({
+                            server = { moduleA },
+                            reporter = reporterMock,
+                        })
+                        moduleLoader:loadModules()
+
+                        expect(moduleMocks[moduleA].forgetValidation).to.be.a('function')
+
+                        local function callForgetValidation()
+                            moduleMocks[moduleA].forgetValidation()
+                        end
+
+                        callForgetValidation()
+
+                        local line, moduleCaller = debug.info(callForgetValidation, 'ls')
+
+                        expect(#reporterMock.events).to.equal(1)
+                        expect(reporterMock.events[1].message).to.equal(
+                            ('function `A.%s` is declared as an exposed '):format(functionName)
+                                .. 'remote, but the validation failed when calling '
+                                .. ('it from `callForgetValidation` at line %d'):format(line + 1)
+                                .. (' in server module `%s`'):format(moduleCaller)
+                        )
+                        expect(reporterMock.events[1].level).to.equal('warn')
+                    end)
+                end
             end)
         end
 

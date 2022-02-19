@@ -26,7 +26,9 @@ return function()
         })
     end)
 
-    for _, level in ipairs({ 'error', 'warn', 'info', 'debug' }) do
+    local logLevels = { 'error', 'warn', 'info', 'debug' }
+
+    for _, level in ipairs(logLevels) do
         describe(level, function()
             local configName = 'on' .. level:sub(1, 1):upper() .. level:sub(2)
 
@@ -45,6 +47,23 @@ return function()
             end)
         end)
     end
+
+    describe('fromLogLevel', function()
+        for _, level in ipairs(logLevels) do
+            it(('creates a reporter from `%s`'):format(level), function()
+                local newReporter = Reporter.fromLogLevel(level)
+                expect(newReporter).to.be.ok()
+            end)
+        end
+
+        it('throws if not a valid reporter level', function()
+            expect(function()
+                Reporter.fromLogLevel('oof')
+            end).to.throw(
+                'invalid value for `logError`: expected `error`, `warn`, `info` or `debug`'
+            )
+        end)
+    end)
 
     describe('assert', function()
         it('calls `onError` if the condition is nil', function()

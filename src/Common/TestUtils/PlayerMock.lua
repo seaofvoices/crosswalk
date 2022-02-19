@@ -1,7 +1,12 @@
 local PlayerMock = {
     ClassName = 'Player',
 }
-local PlayerMockMetatable = { __index = PlayerMock }
+local PlayerMockMetatable = {
+    __index = PlayerMock,
+    __tostring = function(playerMock)
+        return playerMock.Name
+    end,
+}
 
 local function new()
     return setmetatable({
