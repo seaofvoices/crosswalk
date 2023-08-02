@@ -52,26 +52,7 @@ jobs:
   build-assets:
     needs: create-release
 
-    name: Build crosswalk assets
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: 'true'
-
-      - uses: Roblox/setup-foreman@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build assets
-        run: ./scripts/build-assets.sh
-
-  upload-assets:
-    needs:
-      - create-release
-      - build-assets
-    name: Create release
+    name: Add crosswalk assets
     runs-on: ubuntu-latest
 
     strategy:
@@ -97,6 +78,17 @@ jobs:
             path: build/debug/client-main.rbxm
 
     steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - uses: Roblox/setup-foreman@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build assets
+        run: ./scripts/build-assets.sh
+
       - name: Upload asset
         uses: actions/upload-artifact@v3
         with:
@@ -112,4 +104,3 @@ jobs:
           asset_path: ${{ matrix.path }}
           asset_name: ${{ matrix.artifact-name }}
           asset_content_type: application/roblox
-
