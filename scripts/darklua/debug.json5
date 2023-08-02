@@ -7,6 +7,8 @@
     },
     "compute_expression",
     "remove_unused_if_branch",
+    "filter_after_early_return",
+    "convert_index_to_field",
     "remove_unused_while",
     "remove_empty_do",
     "remove_method_definition",
