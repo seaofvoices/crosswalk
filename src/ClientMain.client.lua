@@ -17,6 +17,7 @@ end
 local clientLoader = ClientLoader.new({
     clientModules = getModules(ReplicatedStorage:WaitForChild('ClientModules')),
     sharedModules = getModules(ReplicatedStorage:WaitForChild('SharedModules')),
+    externalModules = {},
     logLevel = nil, -- can be 'error', 'warn', 'info' or 'debug' (default is 'warn')
 })
 clientLoader:start()

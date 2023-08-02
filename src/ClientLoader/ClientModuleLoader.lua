@@ -20,36 +20,42 @@ function ClientModuleLoader:loadModules()
 
     self.clientRemotes:listen()
 
+    for moduleName, externalModule in pairs(self.external) do
+        self.reporter:debug('adding external module `%s`', moduleName)
+        self.shared[moduleName] = externalModule
+        self.client[moduleName] = externalModule
+    end
+
     self.reporter:debug('loading shared modules')
-    self:_loadSharedModules()
+    local onlySharedModules = self:_loadSharedModules()
 
     self.reporter:debug('loading client modules')
-    self:_loadClientModules()
+    local onlyClientModules = self:_loadClientModules()
 
     self.reporter:debug('calling `Init` for shared modules')
-    for _, module in pairs(self.shared) do
+    for _, module in ipairs(onlySharedModules) do
         if module.Init then
             module.Init()
         end
     end
 
     self.reporter:debug('calling `Init` for client modules')
-    for name, module in pairs(self.client) do
-        if self.shared[name] == nil and module.Init then
+    for _, module in ipairs(onlyClientModules) do
+        if module.Init then
             module.Init()
         end
     end
 
     self.reporter:debug('calling `Start` for shared modules')
-    for _, module in pairs(self.shared) do
+    for _, module in ipairs(onlySharedModules) do
         if module.Start then
             module.Start()
         end
     end
 
     self.reporter:debug('calling `Start` for client modules')
-    for name, module in pairs(self.client) do
-        if self.shared[name] == nil and module.Start then
+    for _, module in ipairs(onlyClientModules) do
+        if module.Start then
             module.Start()
         end
     end
@@ -57,8 +63,8 @@ function ClientModuleLoader:loadModules()
     self.clientRemotes:fireReadyRemote()
 
     self.reporter:debug('calling `OnPlayerReady` for client modules')
-    for name, module in pairs(self.client) do
-        if self.shared[name] == nil and module.OnPlayerReady then
+    for _, module in ipairs(onlyClientModules) do
+        if module.OnPlayerReady then
             task.spawn(module.OnPlayerReady, self.player)
         end
     end
@@ -67,9 +73,17 @@ function ClientModuleLoader:loadModules()
 end
 
 function ClientModuleLoader:_loadSharedModules()
+    local sharedModules = {}
     for _, moduleScript in ipairs(self.sharedScripts) do
         local moduleName = moduleScript.Name
+        self.reporter:debug('loading shared module `%s`', moduleName)
 
+        self.reporter:assert(
+            self.external[moduleName] == nil,
+            'shared module named %q was already provided as an external client module. Rename '
+                .. 'the shared module or the external module',
+            moduleName
+        )
         self.reporter:assert(
             self.shared[moduleName] == nil,
             'shared module named %q was already registered as a shared module',
@@ -84,15 +98,25 @@ function ClientModuleLoader:_loadSharedModules()
 
         self.shared[moduleName] = module
         self.client[moduleName] = module
+        table.insert(sharedModules, module)
     end
+    return sharedModules
 end
 
 function ClientModuleLoader:_loadClientModules()
+    local clientModules = {}
     local serverModules = self.clientRemotes:getServerModules()
 
     for _, moduleScript in ipairs(self.clientScripts) do
         local moduleName = moduleScript.Name
+        self.reporter:debug('loading client module `%s`', moduleName)
 
+        self.reporter:assert(
+            self.external[moduleName] == nil,
+            'client module named %q was already provided as an external client module. Rename '
+                .. 'the client module or the external module',
+            moduleName
+        )
         self.reporter:assert(
             self.shared[moduleName] == nil,
             'client module named %q was already registered as a shared module',
@@ -129,7 +153,10 @@ function ClientModuleLoader:_loadClientModules()
         end
 
         self.client[moduleName] = module
+        table.insert(clientModules, module)
     end
+
+    return clientModules
 end
 
 local function new(options)
@@ -137,6 +164,7 @@ local function new(options)
         _hasLoaded = false,
         shared = {},
         client = {},
+        external = options.external or {},
         sharedScripts = options.shared,
         clientScripts = options.client,
         player = options.player,

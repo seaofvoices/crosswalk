@@ -2,6 +2,7 @@
 
 ## Unreleased Changes
 
+* Add support for providing external modules ([#16](https://gitlab.com/seaofvoices/crosswalk/-/merge_requests/16))
 * Update client loader ([#15](https://gitlab.com/seaofvoices/crosswalk/-/merge_requests/15))
 * Update server loader ([#14](https://gitlab.com/seaofvoices/crosswalk/-/merge_requests/14))
 

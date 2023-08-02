@@ -115,6 +115,7 @@ local function new(configuration)
             shared = configuration.sharedModules,
             server = configuration.serverModules,
             client = configuration.clientModules,
+            external = configuration.externalModules,
             serverRemotes = serverRemotes,
             reporter = reporter,
         })

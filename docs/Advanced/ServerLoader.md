@@ -24,6 +24,11 @@ local loader = ServerLoader.new({
     clientModules = ReplicatedStorage:WaitForChild('ClientModules'):GetChildren(),
     sharedModules = ReplicatedStorage:WaitForChild('SharedModules'):GetChildren(),
     -- put other configuration values to override:
+    -- to provide modules that are not going to get linked and connected by
+    -- crosswalk, use `externalModules`
+    externalModules = {
+        Llama = require(ReplicatedStorage:WaitForChild('Llama')),
+    },
     -- this will make crosswalk print a bunch of information to the output
     logLevel = 'debug'
     -- kick players that send unexpected input to server functions
@@ -52,6 +57,7 @@ The `configuration` parameter is a table that contains the values presented here
 | `serverModules` | [ModuleScript](https://developer.roblox.com/en-us/api-reference/class/ModuleScript) list | a list of server modules to load |
 | `clientModules` | [ModuleScript](https://developer.roblox.com/en-us/api-reference/class/ModuleScript) list | a list of client modules to load |
 | `sharedModules` | [ModuleScript](https://developer.roblox.com/en-us/api-reference/class/ModuleScript) list | a list of shared modules to load |
+| `externalModules` | `{ [string]: any }` | a dictionary that maps a module name to its implementation |
 | `logLevel` | `'error'`, `'warn'`, `'info'` or `'debug'` | Defines what will crosswalk's reporter outputs to the console. Default is `'warn'` |
 | `onSecondPlayerRequest` | `function` (optional) | a function that gets called when a player tries to obtain de initial remote setup information more than once |
 | `onKeyError` | `function` (optional) | a function that gets called when a player sends the wrong key to a remote |

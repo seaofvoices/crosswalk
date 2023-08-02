@@ -40,6 +40,7 @@ return function()
             shared = config.shared or {},
             server = config.server or {},
             client = config.client or {},
+            external = config.external or {},
             requireModule = requireMock,
             serverRemotes = config.serverRemotes or createServerRemotesMock(),
             reporter = config.reporter,
@@ -125,6 +126,32 @@ return function()
                 moduleLoader:loadModules()
             end).to.throw(
                 'server module named "A" was already registered as a server module'
+            )
+        end)
+
+        it('throws if a shared module name is used also for an external module', function()
+            local moduleLoader = newModuleLoader({
+                shared = { moduleA },
+                external = { [moduleA.Name] = {} },
+            })
+            expect(function()
+                moduleLoader:loadModules()
+            end).to.throw(
+                'shared module named "A" was already provided as an external server module. '
+                    .. 'Rename the shared module or the external module'
+            )
+        end)
+
+        it('throws if a server module name is used also for an external module', function()
+            local moduleLoader = newModuleLoader({
+                server = { moduleA },
+                external = { [moduleA.Name] = {} },
+            })
+            expect(function()
+                moduleLoader:loadModules()
+            end).to.throw(
+                'server module named "A" was already provided as an external server module. '
+                    .. 'Rename the server module or the external module'
             )
         end)
 

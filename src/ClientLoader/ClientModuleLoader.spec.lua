@@ -37,6 +37,7 @@ return function()
         return ClientModuleLoader.new({
             shared = config.shared or {},
             client = config.client or {},
+            external = config.external or {},
             player = config.player or Mocks.Player.new(),
             requireModule = requireMock,
             clientRemotes = config.clientRemotes or createClientRemotesMock(),
@@ -122,6 +123,32 @@ return function()
                 moduleLoader:loadModules()
             end).to.throw(
                 'client module named "A" was already registered as a client module'
+            )
+        end)
+
+        it('throws if a shared module name is used also for an external client module', function()
+            local moduleLoader = newModuleLoader({
+                shared = { moduleA },
+                external = { [moduleA.Name] = {} },
+            })
+            expect(function()
+                moduleLoader:loadModules()
+            end).to.throw(
+                'shared module named "A" was already provided as an external client module. '
+                    .. 'Rename the shared module or the external module'
+            )
+        end)
+
+        it('throws if a client module name is used also for an external client module', function()
+            local moduleLoader = newModuleLoader({
+                client = { moduleA },
+                external = { [moduleA.Name] = {} },
+            })
+            expect(function()
+                moduleLoader:loadModules()
+            end).to.throw(
+                'client module named "A" was already provided as an external client module. '
+                    .. 'Rename the client module or the external module'
             )
         end)
 

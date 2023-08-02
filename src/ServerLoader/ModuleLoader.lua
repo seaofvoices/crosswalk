@@ -53,22 +53,28 @@ function ModuleLoader:loadModules()
         'modules were already loaded once and cannot be loaded twice!'
     )
 
+    for moduleName, externalModule in pairs(self.external) do
+        self.reporter:debug('adding external module `%s`', moduleName)
+        self.shared[moduleName] = externalModule
+        self.server[moduleName] = externalModule
+    end
+
     self.reporter:debug('loading shared modules')
-    self:_loadSharedModules()
+    local onlySharedModules = self:_loadSharedModules()
 
     self.reporter:debug('loading server modules')
-    self:_loadServerModules()
+    local onlyServerModules = self:_loadServerModules()
 
     self.reporter:debug('calling `Init` for shared modules')
-    for _, module in pairs(self.shared) do
+    for _, module in ipairs(onlySharedModules) do
         if module.Init then
             module.Init()
         end
     end
 
     self.reporter:debug('calling `Init` for server modules')
-    for name, module in pairs(self.server) do
-        if self.shared[name] == nil and module.Init then
+    for _, module in ipairs(onlyServerModules) do
+        if module.Init then
             module.Init()
         end
     end
@@ -77,15 +83,15 @@ function ModuleLoader:loadModules()
     self:_setupClientRemotes()
 
     self.reporter:debug('calling `Start` for shared modules')
-    for _, module in pairs(self.shared) do
+    for _, module in ipairs(onlySharedModules) do
         if module.Start then
             module.Start()
         end
     end
 
     self.reporter:debug('calling `Start` for server modules')
-    for name, module in pairs(self.server) do
-        if self.shared[name] == nil and module.Start then
+    for _, module in ipairs(onlyServerModules) do
+        if module.Start then
             module.Start()
         end
     end
@@ -94,9 +100,18 @@ function ModuleLoader:loadModules()
 end
 
 function ModuleLoader:_loadSharedModules()
+    local sharedModules = {}
+
     for _, moduleScript in ipairs(self.sharedScripts) do
         local moduleName = moduleScript.Name
+        self.reporter:debug('loading shared module `%s`', moduleName)
 
+        self.reporter:assert(
+            self.external[moduleName] == nil,
+            'shared module named %q was already provided as an external server module. Rename '
+                .. 'the shared module or the external module',
+            moduleName
+        )
         self.reporter:assert(
             self.shared[moduleName] == nil,
             'shared module named %q was already registered as a shared module',
@@ -111,13 +126,25 @@ function ModuleLoader:_loadSharedModules()
 
         self.shared[moduleName] = module
         self.server[moduleName] = module
+        table.insert(sharedModules, module)
     end
+
+    return sharedModules
 end
 
 function ModuleLoader:_loadServerModules()
+    local serverModules = {}
+
     for _, moduleScript in ipairs(self.serverScripts) do
         local moduleName = moduleScript.Name
+        self.reporter:debug('loading server module `%s`', moduleName)
 
+        self.reporter:assert(
+            self.external[moduleName] == nil,
+            'server module named %q was already provided as an external server module. Rename '
+                .. 'the server module or the external module',
+            moduleName
+        )
         self.reporter:assert(
             self.shared[moduleName] == nil,
             'server module named %q was already registered as a shared module',
@@ -222,7 +249,10 @@ function ModuleLoader:_loadServerModules()
         end
 
         self.server[moduleName] = module
+        table.insert(serverModules, module)
     end
+
+    return serverModules
 end
 
 function ModuleLoader:_setupClientRemotes()
@@ -366,6 +396,7 @@ local function new(options)
         shared = {},
         server = {},
         client = {},
+        external = options.external or {},
         ranOnPlayerReady = {},
         sharedScripts = options.shared,
         serverScripts = options.server,

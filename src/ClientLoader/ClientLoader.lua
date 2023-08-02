@@ -40,6 +40,7 @@ local function new(configuration)
         or ClientModuleLoader.new({
             shared = configuration.sharedModules,
             client = configuration.clientModules,
+            external = configuration.externalModules,
             player = player,
             reporter = reporter,
             services = configuration.services or ClientServices,

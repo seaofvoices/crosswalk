@@ -22,8 +22,14 @@ local loader = ClientLoader.new({
     clientModules = ReplicatedStorage:WaitForChild('ClientModules'):GetChildren(),
     sharedModules = ReplicatedStorage:WaitForChild('SharedModules'):GetChildren(),
     -- put other configuration values to override:
+    -- to provide modules that are not going to get linked and connected by
+    -- crosswalk, use `externalModules`
+    externalModules = {
+        Llama = require(ReplicatedStorage:WaitForChild('Llama')),
+        Roact = require(ReplicatedStorage:WaitForChild('Roact')),
+    },
     -- this will make crosswalk print a bunch of information to the output
-    logLevel = 'debug'
+    logLevel = 'debug',
 })
 loader:start()
 ```
@@ -44,6 +50,7 @@ The `configuration` parameter is a table that contains the values presented here
 | -- | -- | -- |
 | `clientModules` | [ModuleScript](https://developer.roblox.com/en-us/api-reference/class/ModuleScript) list | a list of client modules to load |
 | `sharedModules` | [ModuleScript](https://developer.roblox.com/en-us/api-reference/class/ModuleScript) list | a list of shared modules to load |
+| `externalModules` | `{ [string]: any }` | a dictionary that maps a module name to its implementation |
 | `logLevel` | `'error'`, `'warn'`, `'info'` or `'debug'` | Defines what will crosswalk's reporter outputs to the console. Default is `'warn'` |
 
 ### `start`
