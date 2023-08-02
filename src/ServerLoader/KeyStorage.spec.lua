@@ -108,12 +108,8 @@ return function()
                                 info.createKey.name
                             )
                         end
-                        local verified = storage:verifyKey(
-                            playerMock,
-                            info.module,
-                            info.name,
-                            'any-key'
-                        )
+                        local verified =
+                            storage:verifyKey(playerMock, info.module, info.name, 'any-key')
 
                         expect(verified).to.equal(false)
                     end)

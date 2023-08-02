@@ -287,16 +287,12 @@ function ModuleLoader:_setupClientRemotes()
 
                 if functionName:match('_event$') then
                     name = functionName:match('(.+)_event$')
-                    callClient, callAllClients = self.serverRemotes:addEventToClient(
-                        moduleName,
-                        name
-                    )
+                    callClient, callAllClients =
+                        self.serverRemotes:addEventToClient(moduleName, name)
                 elseif functionName:match('_func$') then
                     name = functionName:match('(.+)_func$')
-                    callClient, callAllClients = self.serverRemotes:addFunctionToClient(
-                        moduleName,
-                        name
-                    )
+                    callClient, callAllClients =
+                        self.serverRemotes:addFunctionToClient(moduleName, name)
                 end
 
                 if name then
