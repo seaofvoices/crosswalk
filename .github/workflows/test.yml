@@ -23,8 +23,8 @@ jobs:
       - name: Verify code format
         run: stylua --check src
 
-  lint:
-    name: Verify code style
+  analyze:
+    name: Analyze
     runs-on: ubuntu-latest
 
     steps:
