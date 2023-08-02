@@ -17,10 +17,10 @@ You can also download these Roblox model files and insert them into your game. T
 
 | asset | develop | production |
 | -- | -- | -- |
-| Client Loader | [client-loader.rbxm](../releases/master/debug/client-loader.rbxm) | [client-loader.rbxm](../releases/master/client-loader.rbxm) |
-| Server Loader | [server-loader.rbxm](../releases/master/debug/server-loader.rbxm) | [server-loader.rbxm](../releases/master/server-loader.rbxm) |
-| Client Main | [client-main.rbxm](../releases/master/debug/client-main.rbxm) | [client-main.rbxm](../releases/master/client-main.rbxm) |
-| Server Main| [server-main.rbxm](../releases/master/debug/server-main.rbxm) | [server-main.rbxm](../releases/master/server-main.rbxm) |
+| Client Loader | [client-loader.rbxm](../releases/main/debug/client-loader.rbxm) | [client-loader.rbxm](../releases/main/client-loader.rbxm) |
+| Server Loader | [server-loader.rbxm](../releases/main/debug/server-loader.rbxm) | [server-loader.rbxm](../releases/main/server-loader.rbxm) |
+| Client Main | [client-main.rbxm](../releases/main/debug/client-main.rbxm) | [client-main.rbxm](../releases/main/client-main.rbxm) |
+| Server Main| [server-main.rbxm](../releases/main/debug/server-main.rbxm) | [server-main.rbxm](../releases/main/server-main.rbxm) |
 
 !!! Important
     The difference between the develop and production builds is that warnings and verifications are removed from the production builds.
@@ -30,7 +30,7 @@ You can also download these Roblox model files and insert them into your game. T
 To add the project as a git submodule into an existing git repository, run
 
 ```
-git submodule add https://gitlab.com/seaofvoices/crosswalk.git modules/crosswalk
+git submodule add https://github.com/seaofvoices/crosswalk.git modules/crosswalk
 ```
 
 This will insert it in a folder named `modules` under the root of the repository, but you can put it anywhere you want.

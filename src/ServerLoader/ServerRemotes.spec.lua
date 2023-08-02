@@ -23,9 +23,8 @@ return function()
             isPlayerReady = options.isPlayerReady or function()
                 return true
             end,
-            remoteStorage = options.remoteStorage or RemoteStorage.new(
-                options.remoteParent or Instance.new('Folder')
-            ),
+            remoteStorage = options.remoteStorage
+                or RemoteStorage.new(options.remoteParent or Instance.new('Folder')),
             keyStorage = options.keyStorage or KeyStorage.new({
                 sendKey = getCallLogger('sendKey'),
                 onKeyError = getCallLogger('onKeyError'),
@@ -98,11 +97,8 @@ return function()
                     },
                 })
 
-                firePlayer, fireAllPlayers = serverRemotes[methodName](
-                    serverRemotes,
-                    'module',
-                    'process'
-                )
+                firePlayer, fireAllPlayers =
+                    serverRemotes[methodName](serverRemotes, 'module', 'process')
             end)
 
             it('creates a new remote', function()

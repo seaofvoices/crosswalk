@@ -59,7 +59,7 @@ As for where these folders should be into a place, the only restriction is that 
 
 ### Using the default module loaders
 
-crosswalk comes with two default module loaders, one for the [client modules](https://gitlab.com/seaofvoices/crosswalk/-/blob/master/src/ClientMain.client.lua) and one for the [server modules](https://gitlab.com/seaofvoices/crosswalk/-/blob/master/src/Main.server.lua). In order to use those scripts, simply put the client main under [ReplicatedFirst](https://developer.roblox.com/en-us/api-reference/class/ReplicatedFirst) and the server main under [ServerScriptService](https://developer.roblox.com/en-us/api-reference/class/ServerScriptService).
+crosswalk comes with two default module loaders, one for the [client modules](https://github.com/seaofvoices/crosswalk/blob/main/src/ClientMain.client.lua) and one for the [server modules](https://github.com/seaofvoices/crosswalk/blob/main/src/Main.server.lua). In order to use those scripts, simply put the client main under [ReplicatedFirst](https://developer.roblox.com/en-us/api-reference/class/ReplicatedFirst) and the server main under [ServerScriptService](https://developer.roblox.com/en-us/api-reference/class/ServerScriptService).
 
 If you are using the default client and server loader from crosswalk, you are expected to provide three folders:
 

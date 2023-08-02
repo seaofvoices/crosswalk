@@ -148,9 +148,8 @@ function ClientRemotes:_getFireRemote(module, functionName, remote, withKey)
             remote:FireServer(self.currentKeys[module][functionName], ...)
             self:_yieldUntilNewKey(module, functionName)
         else
-            local result = table.pack(
-                remote:InvokeServer(self.currentKeys[module][functionName], ...)
-            )
+            local result =
+                table.pack(remote:InvokeServer(self.currentKeys[module][functionName], ...))
             self:_yieldUntilNewKey(module, functionName)
             return unpack(result, 1, result.n)
         end

@@ -9,7 +9,7 @@ mkdir -p build/temp
 cp -r rojo build/temp
 
 # build production artifacts
-darklua process --config-path scripts/darklua/prod.json5 src build/temp/src
+darklua process --config scripts/darklua/prod.json5 src build/temp/src
 
 rojo build build/temp/rojo/server-loader.project.json -o build/server-loader.rbxm
 rojo build build/temp/rojo/client-loader.project.json -o build/client-loader.rbxm
@@ -20,7 +20,7 @@ rojo build build/temp/rojo/client-main.project.json -o build/client-main.rbxm
 rm -fr build/temp/src
 
 # build debug artifacts
-darklua process --config-path scripts/darklua/debug.json5 src build/temp/src
+darklua process --config scripts/darklua/debug.json5 src build/temp/src
 
 mkdir -p build/debug
 
