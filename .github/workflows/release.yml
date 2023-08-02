@@ -34,9 +34,9 @@ jobs:
       - name: Create tag
         run: |
           git fetch --tags --no-recurse-submodules
-          if [ ! $(git tag -l ${{ inputs.release_tag }}) ]; then
-            git tag ${{ inputs.release_tag }}
-            git push origin ${{ inputs.release_tag }}
+          if [ ! $(git tag -l v0 ]; then
+            git tag v0
+            git push origin v0
           fi
 
       - name: Create release
@@ -45,8 +45,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ inputs.release_tag }}
-          name: ${{ inputs.release_tag }}
+          tag_name: "v0"
+          name: "v0"
           draft: false
 
   build-assets:
