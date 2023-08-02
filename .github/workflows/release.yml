@@ -34,7 +34,7 @@ jobs:
       - name: Create tag
         run: |
           git fetch --tags --no-recurse-submodules
-          if [ ! $(git tag -l v0 ]; then
+          if [ ! $(git tag -l v0) ]; then
             git tag v0
             git push origin v0
           fi
