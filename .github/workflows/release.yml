@@ -1,15 +1,11 @@
 name: Release
 
 on:
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       release_tag:
         description: 'The version to release starting with `v`'
-        # required: true
-        default: "v0"
+        required: true
         type: string
 
       release_ref:
@@ -34,9 +30,9 @@ jobs:
       - name: Create tag
         run: |
           git fetch --tags --no-recurse-submodules
-          if [ ! $(git tag -l v0) ]; then
-            git tag v0
-            git push origin v0
+          if [ ! $(git tag -l ${{ inputs.release_tag }}) ]; then
+            git tag ${{ inputs.release_tag }}
+            git push origin ${{ inputs.release_tag }}
           fi
 
       - name: Create release
@@ -45,8 +41,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: "v0"
-          name: "v0"
+          tag_name: ${{ inputs.release_tag }}
+          name: ${{ inputs.release_tag }}
           draft: false
 
   build-assets:
