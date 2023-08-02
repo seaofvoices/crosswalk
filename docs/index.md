@@ -7,4 +7,4 @@ The framework works by generating and connecting [remote functions and events](h
 crosswalk is designed to make it really easy to communicate between any module from both client and server side. Unfortunately, that comes with a downside: it is also really easy to start making everything connected of everything else! Having too much dependencies in a module will make it hard to modify, since a lot of modules can be affected by the changes.
 
 !!! Warning
-    This documentation is work in progress, if you have found typos or if you have any suggestion on what could be added, open a [issue on Gitlab](https://gitlab.com/seaofvoices/crosswalk/-/issues/new).
+    This documentation is work in progress, if you have found typos or if you have any suggestion on what could be added, open an [issue on GitHub](https://github.com/seaofvoices/crosswalk/issues).

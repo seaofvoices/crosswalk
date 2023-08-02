@@ -1,7 +1,7 @@
 site_name: crosswalk
-site_url: https://seaofvoices.gitlab.io/crosswalk/
+site_url: https://crosswalk.seaofvoices.ca/
 repo_name: seaofvoices/crosswalk
-repo_url: https://gitlab.com/seaofvoices/crosswalk
+repo_url: https://github.com/seaofvoices/crosswalk
 edit_uri: ''
 
 theme:
