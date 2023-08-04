@@ -1,5 +1,14 @@
 {
   process: [
+    {
+      rule: "convert_require",
+      current: "path",
+      target: {
+        name: "roblox",
+        rojo_sourcemap: "./rojo/sourcemap.json",
+        indexing_style: "wait_for_child",
+      },
+    },
     "remove_comments",
     "remove_spaces",
     {

@@ -11,37 +11,37 @@
         "ReplicatedFirst": {
             "$className": "ReplicatedFirst",
             "ClientMain": {
-                "$path": "rojo/client-main.project.json"
+                "$path": "./client-main.project.json"
             }
         },
         "ReplicatedStorage": {
             "$className": "ReplicatedStorage",
             "ClientLoader": {
-                "$path": "rojo/client-loader.project.json"
+                "$path": "./client-loader.project.json"
             },
             "ClientModules": {
-                "$path": "test-place/ClientModules"
+                "$path": "../test-place/ClientModules"
             },
             "SharedModules": {
-                "$path": "test-place/SharedModules"
+                "$path": "../test-place/SharedModules"
             },
             "TestEZ": {
-                "$path": "modules/testez"
+                "$path": "../modules/testez"
             }
         },
         "ServerScriptService": {
             "$className": "ServerScriptService",
             "Main": {
-                "$path": "rojo/server-main.project.json"
+                "$path": "./server-main.project.json"
             }
         },
         "ServerStorage": {
             "$className": "ServerStorage",
             "ServerModules": {
-                "$path": "test-place/ServerModules"
+                "$path": "../test-place/ServerModules"
             },
             "ServerLoader": {
-                "$path": "rojo/server-loader.project.json"
+                "$path": "./server-loader.project.json"
             }
         }
     }
