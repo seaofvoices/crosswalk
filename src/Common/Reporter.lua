@@ -1,3 +1,4 @@
+--!nonstrict
 local Reporter = {}
 local ReporterMetatable = { __index = Reporter }
 

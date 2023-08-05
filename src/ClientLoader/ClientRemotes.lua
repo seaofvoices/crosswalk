@@ -1,3 +1,4 @@
+--!nonstrict
 local Reporter = require('../Common/Reporter')
 local getFireRemote = require('./getFireRemote')
 
@@ -144,6 +145,7 @@ function ClientRemotes:_getFireRemote(module, functionName, remote, withKey)
         if isEvent then
             remote:FireServer(self.currentKeys[module][functionName], ...)
             self:_yieldUntilNewKey(module, functionName)
+            return
         else
             local result =
                 table.pack(remote:InvokeServer(self.currentKeys[module][functionName], ...))

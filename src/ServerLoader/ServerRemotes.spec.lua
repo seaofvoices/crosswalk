@@ -1,3 +1,4 @@
+--!nocheck
 return function()
     local ServerRemotes = require('./ServerRemotes')
 
@@ -220,6 +221,7 @@ return function()
                 if remote.OnServerInvoke then
                     return remote.OnServerInvoke(...)
                 end
+                return
             end,
         },
     }

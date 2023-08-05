@@ -1,3 +1,4 @@
+--!nonstrict
 local SpecialFunctions = require('./SpecialFunctions')
 local extractFunctionName = require('./extractFunctionName')
 

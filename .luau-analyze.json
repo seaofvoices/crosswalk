@@ -1,0 +1,7 @@
+{
+  "luau-lsp.types.definitionFiles": [
+    "globalTypes.d.lua",
+    "testezTypes.d.lua"
+  ],
+  "luau-lsp.require.mode": "relativeToFile"
+}

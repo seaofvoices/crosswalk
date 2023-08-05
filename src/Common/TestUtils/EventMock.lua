@@ -1,3 +1,4 @@
+--!nonstrict
 local ConnectionMock = {}
 local ConnectionMockMetatable = { __index = ConnectionMock }
 

@@ -10,4 +10,6 @@ build/
 test-places/
 docs/releases/main
 
+/globalTypes.d.lua
+
 /sourcemap.json

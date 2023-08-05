@@ -1,3 +1,4 @@
+--!nocheck
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
 local createKey = require('./createKey')
@@ -38,6 +39,7 @@ function ServerLoader:start()
             return self.serverRemotes:getRemoteInformation(player)
         else
             self.onSecondPlayerRequest(player)
+            return
         end
     end
 

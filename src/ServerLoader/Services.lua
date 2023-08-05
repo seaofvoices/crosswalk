@@ -1,3 +1,4 @@
+--!nonstrict
 return setmetatable({
     Lighting = game:GetService('Lighting'),
     HttpService = game:GetService('HttpService'),
