@@ -83,7 +83,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build assets
-        run: ./scripts/build-assets.sh
+        run: lune build-assets
 
       - name: Upload asset
         uses: actions/upload-artifact@v3
