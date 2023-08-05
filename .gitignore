@@ -10,6 +10,4 @@ build/
 test-places/
 docs/releases/main
 
-**/roblox.toml
-
 /sourcemap.json
