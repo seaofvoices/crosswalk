@@ -1,5 +1,5 @@
 return function()
-    local Map2D = require(script.Parent.Map2D)
+    local Map2D = require('./Map2D')
 
     local map = nil
     beforeEach(function()

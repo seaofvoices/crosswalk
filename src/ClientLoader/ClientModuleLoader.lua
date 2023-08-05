@@ -1,10 +1,7 @@
-local ClientLoaderModule = script.Parent
-local Common = ClientLoaderModule:WaitForChild('Common')
-
-local ClientServices = require(ClientLoaderModule:WaitForChild('ClientServices'))
-local requireModule = require(Common:WaitForChild('requireModule'))
-local Reporter = require(Common:WaitForChild('Reporter'))
-local validateSharedModule = require(Common:WaitForChild('validateSharedModule'))
+local ClientServices = require('./ClientServices')
+local requireModule = require('../Common/requireModule')
+local Reporter = require('../Common/Reporter')
+local validateSharedModule = require('../Common/validateSharedModule')
 
 local EVENT_PATTERN = '_event$'
 local FUNCTION_PATTERN = '_func$'

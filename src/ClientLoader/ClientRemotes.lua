@@ -1,8 +1,5 @@
-local ClientLoaderModule = script.Parent
-local Common = ClientLoaderModule:WaitForChild('Common')
-
-local Reporter = require(Common:WaitForChild('Reporter'))
-local getFireRemote = require(ClientLoaderModule:WaitForChild('getFireRemote'))
+local Reporter = require('../Common/Reporter')
+local getFireRemote = require('./getFireRemote')
 
 local ClientRemotes = {}
 local ClientRemotesMetatable = { __index = ClientRemotes }

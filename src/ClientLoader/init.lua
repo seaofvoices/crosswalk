@@ -1,1 +1,1 @@
-return require(script:WaitForChild('ClientLoader'))
+return require('./ClientLoader')

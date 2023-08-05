@@ -1,5 +1,5 @@
 return function()
-    local Reporter = require(script.Parent.Reporter)
+    local Reporter = require('./Reporter')
 
     local FORMATTER = 'oof: %s'
     local MESSAGE_ARG = 'reason'

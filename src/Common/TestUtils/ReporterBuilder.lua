@@ -1,4 +1,4 @@
-local Reporter = require(script.Parent.Parent.Reporter)
+local Reporter = require('../Reporter')
 
 local ReporterBuilder = {}
 local ReporterBuilderMetatable = { __index = ReporterBuilder }

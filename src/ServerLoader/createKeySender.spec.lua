@@ -1,5 +1,5 @@
 return function()
-    local createKeySender = require(script.Parent.createKeySender)
+    local createKeySender = require('./createKeySender')
 
     local function remoteMock(name)
         return {

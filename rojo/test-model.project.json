@@ -10,9 +10,6 @@
         },
         "ReplicatedStorage": {
             "$className": "ReplicatedStorage",
-            "Model": {
-                "$path": "../build/model.rbxm"
-            },
             "TestEZ": {
                 "$path": "../modules/testez"
             }

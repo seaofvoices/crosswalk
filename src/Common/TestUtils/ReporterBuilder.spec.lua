@@ -1,5 +1,5 @@
 return function()
-    local ReporterBuilder = require(script.Parent.ReporterBuilder)
+    local ReporterBuilder = require('./ReporterBuilder')
 
     local MESSAGE = 'oof'
 

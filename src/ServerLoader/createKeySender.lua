@@ -1,4 +1,4 @@
-local createKey = require(script.Parent:FindFirstChild('createKey'))
+local createKey = require('./createKey')
 
 local function createKeySender(remoteStorage)
     local keySender = remoteStorage:createOrphanEvent(createKey() .. '   ')

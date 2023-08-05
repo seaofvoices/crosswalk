@@ -1,5 +1,5 @@
 return function()
-    local getSecurity = require(script.Parent.getSecurity)
+    local getSecurity = require('./getSecurity')
 
     it('should return `None` if the given name contains `_danger`', function()
         expect(getSecurity('test_danger')).to.equal('None')

@@ -1,8 +1,7 @@
 return function()
-    local ClientRemotes = require(script.Parent.ClientRemotes)
+    local ClientRemotes = require('./ClientRemotes')
 
-    local TestUtils = script.Parent.Common.TestUtils
-    local Mocks = require(TestUtils.Mocks)
+    local Mocks = require('../Common/TestUtils/Mocks')
 
     local remotesParent = nil
 

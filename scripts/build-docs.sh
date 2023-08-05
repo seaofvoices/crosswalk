@@ -2,7 +2,7 @@
 
 set -ex
 
-./scripts/build-assets.sh
+lune build-assets
 
 mkdir -p ./docs/releases
 rm -rf ./docs/releases/main

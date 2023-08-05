@@ -1,12 +1,9 @@
-local ServerLoaderModule = script.Parent
-local Common = ServerLoaderModule:FindFirstChild('Common')
-
-local getSecurity = require(ServerLoaderModule:FindFirstChild('getSecurity'))
-local Services = require(ServerLoaderModule:FindFirstChild('Services'))
-local Reporter = require(Common:FindFirstChild('Reporter'))
-local requireModule = require(Common:FindFirstChild('requireModule'))
-local validateSharedModule = require(Common:FindFirstChild('validateSharedModule'))
-local extractFunctionName = require(Common:FindFirstChild('extractFunctionName'))
+local getSecurity = require('./getSecurity')
+local Services = require('./Services')
+local Reporter = require('../Common/Reporter')
+local requireModule = require('../Common/requireModule')
+local validateSharedModule = require('../Common/validateSharedModule')
+local extractFunctionName = require('../Common/extractFunctionName')
 
 local EVENT_PATTERN = '_event$'
 local FUNCTION_PATTERN = '_func$'

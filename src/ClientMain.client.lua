@@ -1,6 +1,6 @@
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
-local ClientLoader = require(ReplicatedStorage:WaitForChild('ClientLoader'))
+local ClientLoader = require('./ClientLoader')
 
 local function getModules(folder)
     local filtered = {}

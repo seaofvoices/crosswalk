@@ -1,10 +1,7 @@
 local Players = game:GetService('Players')
 
-local ServerLoaderModule = script.Parent
-local Common = ServerLoaderModule:FindFirstChild('Common')
-
-local Map2D = require(ServerLoaderModule:FindFirstChild('Map2D'))
-local Reporter = require(Common:FindFirstChild('Reporter'))
+local Map2D = require('./Map2D')
+local Reporter = require('../Common/Reporter')
 
 local ServerRemotes = {}
 local ServerRemotesMetatable = { __index = ServerRemotes }
