@@ -23,8 +23,8 @@ jobs:
       - name: Verify code format
         run: stylua --check src .lune
 
-  analyze:
-    name: Analyze
+  selene-check:
+    name: Selene analysis
     runs-on: ubuntu-latest
 
     steps:
@@ -36,3 +36,17 @@ jobs:
 
       - name: Run selene checks
         run: selene src
+
+  analyze:
+    name: Luau analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: Roblox/setup-foreman@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run selene checks
+        run: ./scripts/analyze.sh
