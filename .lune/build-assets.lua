@@ -12,14 +12,7 @@ local buildFolder = 'build'
 
 local function runDarklua(...: string): process.SpawnResult
     local darkluaArgs = table.pack(...)
-    local args = {
-        'run',
-        '--manifest-path',
-        '../darklua-github/Cargo.toml',
-        '--',
-    }
-    table.move(darkluaArgs, 1, darkluaArgs.n, #args, args)
-    return process.spawn('cargo', args)
+    return process.spawn('darklua', darkluaArgs)
 end
 
 local function rojoBuild(configPath: string, output: string)
