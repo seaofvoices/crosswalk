@@ -1,5 +1,4 @@
 [tools]
-remodel = { github = "rojo-rbx/remodel", version = "0.9.1" }
 rojo = { github = "rojo-rbx/rojo", version = "=7.2.0" }
 run-in-roblox = { github = "rojo-rbx/run-in-roblox", version = "0.3.0" }
 selene = { github = "Kampfkarren/selene", version = "=0.25.0" }
