@@ -1,5 +1,5 @@
-local FunctionMock = require(script.Parent.FunctionMock)
-local EventMock = require(script.Parent.EventMock)
+local FunctionMock = require('./FunctionMock')
+local EventMock = require('./EventMock')
 
 local RemoteEventMock = {
     ClassName = 'RemoteEvent',

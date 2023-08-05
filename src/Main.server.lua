@@ -1,7 +1,7 @@
 local ServerStorage = game:GetService('ServerStorage')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
-local ServerLoader = require(ServerStorage:WaitForChild('ServerLoader'))
+local ServerLoader = require('./ServerLoader')
 
 local function getModules(folder)
     local filtered = {}

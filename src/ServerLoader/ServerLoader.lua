@@ -1,17 +1,14 @@
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
-local ServerLoaderModule = script.Parent
-local Common = ServerLoaderModule:FindFirstChild('Common')
+local createKey = require('./createKey')
+local createKeySender = require('./createKeySender')
+local KeyStorage = require('./KeyStorage')
+local ModuleLoader = require('./ModuleLoader')
+local RemoteStorage = require('./RemoteStorage')
+local ServerRemotes = require('./ServerRemotes')
+local Services = require('./Services')
 
-local createKey = require(ServerLoaderModule:FindFirstChild('createKey'))
-local createKeySender = require(ServerLoaderModule:FindFirstChild('createKeySender'))
-local KeyStorage = require(ServerLoaderModule:FindFirstChild('KeyStorage'))
-local ModuleLoader = require(ServerLoaderModule:FindFirstChild('ModuleLoader'))
-local RemoteStorage = require(ServerLoaderModule:FindFirstChild('RemoteStorage'))
-local ServerRemotes = require(ServerLoaderModule:FindFirstChild('ServerRemotes'))
-local Services = require(ServerLoaderModule:FindFirstChild('Services'))
-
-local Reporter = require(Common:FindFirstChild('Reporter'))
+local Reporter = require('../Common/Reporter')
 
 local DEFAULT_REMOTE_CALL_MAX_DELAY = 2
 

@@ -1,4 +1,4 @@
-local FunctionMock = require(script.Parent.FunctionMock)
+local FunctionMock = require('./FunctionMock')
 
 local RemoteFunctionMock = {
     ClassName = 'RemoteFunction',

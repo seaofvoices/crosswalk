@@ -1,9 +1,8 @@
 return function()
-    local ModuleLoader = require(script.Parent.ModuleLoader)
+    local ModuleLoader = require('./ModuleLoader')
 
-    local TestUtils = script.Parent.Common.TestUtils
-    local Mocks = require(TestUtils.Mocks)
-    local ReporterBuilder = require(TestUtils.ReporterBuilder)
+    local Mocks = require('../Common/TestUtils/Mocks')
+    local ReporterBuilder = require('../Common/TestUtils/ReporterBuilder')
 
     local moduleMocks = {}
     local function requireMock(moduleScript)

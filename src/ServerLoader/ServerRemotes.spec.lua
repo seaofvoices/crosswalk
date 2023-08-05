@@ -1,11 +1,10 @@
 return function()
-    local ServerRemotes = require(script.Parent.ServerRemotes)
+    local ServerRemotes = require('./ServerRemotes')
 
-    local Common = script.Parent.Common
-    local KeyStorage = require(script.Parent.KeyStorage)
-    local RemoteStorage = require(script.Parent.RemoteStorage)
-    local Reporter = require(Common.Reporter)
-    local Mocks = require(Common.TestUtils.Mocks)
+    local KeyStorage = require('./KeyStorage')
+    local RemoteStorage = require('./RemoteStorage')
+    local Reporter = require('../Common/Reporter')
+    local Mocks = require('../Common/TestUtils/Mocks')
 
     local calls = nil
     local function getCallLogger(name, list)

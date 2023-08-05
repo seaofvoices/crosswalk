@@ -1,7 +1,5 @@
-local Common = script.Parent
-
-local SpecialFunctions = require(Common:WaitForChild('SpecialFunctions'))
-local extractFunctionName = require(Common:WaitForChild('extractFunctionName'))
+local SpecialFunctions = require('./SpecialFunctions')
+local extractFunctionName = require('./extractFunctionName')
 
 local EVENT_PATTERN = '_event$'
 local FUNCTION_PATTERN = '_func$'

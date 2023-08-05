@@ -1,8 +1,7 @@
-local TestUtils = script.Parent
-local FunctionMock = require(TestUtils.FunctionMock)
-local PlayerMock = require(TestUtils.PlayerMock)
-local RemoteEventMock = require(TestUtils.RemoteEventMock)
-local RemoteFunctionMock = require(TestUtils.RemoteFunctionMock)
+local FunctionMock = require('./FunctionMock')
+local PlayerMock = require('./PlayerMock')
+local RemoteEventMock = require('./RemoteEventMock')
+local RemoteFunctionMock = require('./RemoteFunctionMock')
 
 return {
     Function = FunctionMock,

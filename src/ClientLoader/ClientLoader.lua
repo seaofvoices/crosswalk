@@ -1,13 +1,10 @@
 local Players = game:GetService('Players')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
-local ClientLoaderModule = script.Parent
-local Common = ClientLoaderModule:WaitForChild('Common')
-
-local ClientServices = require(ClientLoaderModule:WaitForChild('ClientServices'))
-local ClientModuleLoader = require(ClientLoaderModule:WaitForChild('ClientModuleLoader'))
-local ClientRemotes = require(ClientLoaderModule:WaitForChild('ClientRemotes'))
-local Reporter = require(Common:WaitForChild('Reporter'))
+local ClientServices = require('./ClientServices')
+local ClientModuleLoader = require('./ClientModuleLoader')
+local ClientRemotes = require('./ClientRemotes')
+local Reporter = require('../Common/Reporter')
 
 local ClientLoader = {}
 local ClientLoaderMetatable = { __index = ClientLoader }

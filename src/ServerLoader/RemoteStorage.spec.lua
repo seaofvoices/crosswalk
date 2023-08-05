@@ -1,5 +1,5 @@
 return function()
-    local RemoteStorage = require(script.Parent.RemoteStorage)
+    local RemoteStorage = require('./RemoteStorage')
 
     local storage = nil
     local remoteParent = nil
