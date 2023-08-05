@@ -48,5 +48,5 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run selene checks
+      - name: Run luau-lsp analysis
         run: ./scripts/analyze.sh
