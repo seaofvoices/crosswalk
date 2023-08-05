@@ -42,7 +42,7 @@ type BuildAssetOptions = {
     darkluaConfigs: { DarkluaConfigOptions }?,
     rojoSourcemapConfig: string?,
     copyContent: { string }?,
-    keepTemporaryFiles: boolean?
+    keepTemporaryFiles: boolean?,
 }
 local function buildAsset(options: BuildAssetOptions)
     local logPrefix = '[' .. options.name .. ']'

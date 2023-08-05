@@ -31,5 +31,5 @@ local function runAllTask(tasks: { () -> () })
 end
 
 return {
-    runAllTask=runAllTask
+    runAllTask = runAllTask,
 }
