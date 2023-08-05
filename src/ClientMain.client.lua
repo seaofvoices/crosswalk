@@ -2,7 +2,7 @@ local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
 local ClientLoader = require('./ClientLoader')
 
-local function getModules(folder)
+local function getModules(folder: Instance): { ModuleScript }
     local filtered = {}
 
     for _, script in ipairs(folder:GetChildren()) do

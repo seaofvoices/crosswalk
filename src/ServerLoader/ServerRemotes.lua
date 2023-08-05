@@ -1,3 +1,4 @@
+--!nonstrict
 local Players = game:GetService('Players')
 
 local Map2D = require('./Map2D')
@@ -59,6 +60,7 @@ function ServerRemotes:addFunctionToClient(moduleName, functionName)
         if self.isPlayerReady(player) then
             return select(2, pcall(remote.InvokeClient, remote, player, ...))
         end
+        return
     end
 
     local function fireAllPlayers(...)
@@ -149,6 +151,7 @@ function ServerRemotes:addFunctionToServer(moduleName, functionName, func, secur
             else
                 task.spawn(self.onUnapprovedExecution, player, moduleName, functionName)
             end
+            return
         end
     elseif security == 'High' then
         function remote.OnServerInvoke(player, key, ...)
@@ -161,6 +164,7 @@ function ServerRemotes:addFunctionToServer(moduleName, functionName, func, secur
                     task.spawn(self.onUnapprovedExecution, player, moduleName, functionName)
                 end
             end
+            return
         end
     elseif security == 'Low' then
         function remote.OnServerInvoke(player, key, ...)
@@ -172,6 +176,7 @@ function ServerRemotes:addFunctionToServer(moduleName, functionName, func, secur
                     task.spawn(self.onUnapprovedExecution, player, moduleName, functionName)
                 end
             end
+            return
         end
     else
         self.reporter:error(

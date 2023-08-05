@@ -1,3 +1,4 @@
+--!nonstrict
 return function()
     local ClientRemotes = require('./ClientRemotes')
 

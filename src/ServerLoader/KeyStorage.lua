@@ -1,3 +1,4 @@
+--!nonstrict
 local createKey = require('./createKey')
 local Map2D = require('./Map2D')
 

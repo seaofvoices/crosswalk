@@ -1,3 +1,4 @@
+--!nocheck
 return function()
     local Map2D = require('./Map2D')
 

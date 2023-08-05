@@ -1,3 +1,4 @@
+--!nonstrict
 local ClientServices = require('./ClientServices')
 local requireModule = require('../Common/requireModule')
 local Reporter = require('../Common/Reporter')

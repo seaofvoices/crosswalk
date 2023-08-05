@@ -1,3 +1,4 @@
+--!nonstrict
 local getSecurity = require('./getSecurity')
 local Services = require('./Services')
 local Reporter = require('../Common/Reporter')
