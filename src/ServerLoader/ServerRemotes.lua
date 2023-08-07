@@ -8,15 +8,10 @@ local KeyStorage = require('./KeyStorage')
 type KeyStorage = KeyStorage.KeyStorage
 local Reporter = require('../Common/Reporter')
 type Reporter = Reporter.Reporter
+local RemoteInformation = require('../Common/RemoteInformation')
+type RemoteInformation = RemoteInformation.RemoteInformation
 
 type RemoteSecurity = 'None' | 'Low' | 'High'
-
-type RemoteInformation = {
-    Keys: { [string]: { [string]: string } },
-    Names: { [string]: { [string]: string } },
-    WaitForKeyNames: { [string]: { [string]: boolean } },
-    NameServerMap: { [string]: boolean },
-}
 
 export type ServerRemotes = {
     addEventToClient: <Args...>(
@@ -311,7 +306,7 @@ function ServerRemotes:getRemoteInformation(player: Player): RemoteInformation
 
     local keys = {}
     local names = {}
-    local waitForNames = {}
+    local waitForNames: { [string]: { [string]: true } } = {}
 
     for moduleName, functions in pairs(self.remotesToServer.content) do
         names[moduleName] = {}

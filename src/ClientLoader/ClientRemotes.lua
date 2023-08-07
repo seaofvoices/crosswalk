@@ -1,6 +1,8 @@
+local getFireRemote = require('./getFireRemote')
 local Reporter = require('../Common/Reporter')
 type Reporter = Reporter.Reporter
-local getFireRemote = require('./getFireRemote')
+local RemoteInformation = require('../Common/RemoteInformation')
+type RemoteInformation = RemoteInformation.RemoteInformation
 
 export type ClientRemotes = {
     listen: (self: ClientRemotes) -> (),
@@ -15,8 +17,6 @@ export type ClientRemotes = {
     fireReadyRemote: (self: ClientRemotes) -> (),
 }
 
-type ServerInfo = any
-
 type Private = {
     remotesSetup: boolean,
     remotes: { [string]: { [string]: RemoteEvent | RemoteFunction } },
@@ -28,7 +28,7 @@ type Private = {
     remotesParent: Instance,
     reporter: Reporter,
 
-    _processServerInfo: (self: ClientRemotes, info: ServerInfo) -> (),
+    _processServerInfo: (self: ClientRemotes, info: RemoteInformation) -> (),
     _getFireRemote: (
         self: ClientRemotes,
         module: string,
@@ -143,7 +143,7 @@ function ClientRemotes:fireReadyRemote()
     self.reporter:error('failed to report ready status to server (cannot find remote)')
 end
 
-function ClientRemotes:_processServerInfo(data)
+function ClientRemotes:_processServerInfo(data: RemoteInformation)
     local self = self :: ClientRemotes & Private
 
     local remoteFolder = self:_getRemotes()

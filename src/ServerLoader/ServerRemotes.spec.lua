@@ -1,24 +1,38 @@
---!nocheck
 return function()
     local ServerRemotes = require('./ServerRemotes')
+    type ServerRemotes = ServerRemotes.ServerRemotes
 
     local KeyStorage = require('./KeyStorage')
+    type KeyStorage = KeyStorage.KeyStorage
     local RemoteStorage = require('./RemoteStorage')
+    type RemoteStorage = RemoteStorage.RemoteStorage
     local Reporter = require('../Common/Reporter')
     local Mocks = require('../Common/TestUtils/Mocks')
 
     local calls = nil
-    local function getCallLogger(name, list)
+    type LoggerCall = {
+        name: string,
+        arguments: { [number]: any, n: number },
+    }
+    local function getCallLogger(name: string, list: { LoggerCall }?): (...any) -> ()
         return function(...)
             table.insert(list or calls, {
                 name = name,
-                arguments = { ... },
+                arguments = table.pack(...),
             })
         end
     end
 
-    local function newServerRemotes(options)
-        options = options or {}
+    type NewServerRemotesOptions = {
+        isPlayerReady: ((Player) -> boolean)?,
+        keyStorage: KeyStorage?,
+        remoteStorage: RemoteStorage?,
+        remoteParent: Instance?,
+        playersService: Players?,
+        reporter: Reporter.Reporter?,
+    }
+    local function newServerRemotes(options: NewServerRemotesOptions?): ServerRemotes
+        local options: NewServerRemotesOptions = options or {}
         return ServerRemotes.new({
             isPlayerReady = options.isPlayerReady or function()
                 return true
@@ -36,7 +50,10 @@ return function()
         })
     end
 
-    local function newRemoteStorageMock()
+    type RemoteStorageMock = RemoteStorage & {
+        event: Mocks.RemoteFunctionMock?,
+    }
+    local function newRemoteStorageMock(): RemoteStorageMock
         return {
             createEvent = function(self, moduleName, functionName)
                 assert(self.event == nil, 'createEvent should be called once')
@@ -50,7 +67,7 @@ return function()
                 self.event.Name = ('%s.%s'):format(moduleName, functionName)
                 return self.event
             end,
-        }
+        } :: any
     end
 
     local playerMock = nil
@@ -87,14 +104,14 @@ return function()
                 remoteStorageMock = newRemoteStorageMock()
                 local serverRemotes = newServerRemotes({
                     remoteStorage = remoteStorageMock,
-                    isPlayerReady = function(player)
+                    isPlayerReady = function(player: Player)
                         return playerReady[player] == true
                     end,
                     playersService = {
                         GetPlayers = function()
                             return { playerMock, otherPlayerMock }
                         end,
-                    },
+                    } :: any,
                 })
 
                 firePlayer, fireAllPlayers =
@@ -102,8 +119,8 @@ return function()
             end)
 
             it('creates a new remote', function()
-                local remote = remoteStorageMock.event
-                expect(remote).to.be.ok()
+                expect(remoteStorageMock.event).to.be.ok()
+                local remote = remoteStorageMock.event :: Mocks.RemoteEventMock
                 expect(remote.ClassName).to.equal(info.remoteClass)
                 expect(remote.Name).to.equal('module.process')
             end)
@@ -111,7 +128,8 @@ return function()
             it('fires the remote to all players that are ready', function()
                 fireAllPlayers(true, 'hello')
 
-                local remote = remoteStorageMock.event
+                expect(remoteStorageMock.event).to.be.ok()
+                local remote = remoteStorageMock.event :: Mocks.RemoteEventMock
                 remote.mocks[info.remoteMethod]:expectCalledOnce(expect, playerMock, true, 'hello')
             end)
 
@@ -128,21 +146,24 @@ return function()
                 it('can fire the remote to one player', function()
                     firePlayer(playerMock, 'hello')
 
-                    local remote = remoteStorageMock.event
+                    expect(remoteStorageMock.event).to.be.ok()
+                    local remote = remoteStorageMock.event :: Mocks.RemoteEventMock
                     remote.mocks[info.remoteMethod]:expectCalledOnce(expect, playerMock, 'hello')
                 end)
 
                 it('does not fire the remote if the player is not ready', function()
                     firePlayer(otherPlayerMock, 'hello')
 
-                    local remote = remoteStorageMock.event
+                    expect(remoteStorageMock.event).to.be.ok()
+                    local remote = remoteStorageMock.event :: Mocks.RemoteEventMock
                     remote.mocks[info.remoteMethod]:expectNeverCalled(expect)
                 end)
 
                 it('can fire the remote with nil values between non-nil values', function()
                     firePlayer(playerMock, nil, nil, nil, nil, true)
 
-                    local remote = remoteStorageMock.event
+                    expect(remoteStorageMock.event).to.be.ok()
+                    local remote = remoteStorageMock.event :: Mocks.RemoteEventMock
                     remote.mocks[info.remoteMethod]:expectCalledOnce(
                         expect,
                         playerMock,
@@ -156,8 +177,9 @@ return function()
 
                 if info.canThrow then
                     it('catches any errors from calling the remote', function()
-                        local remote = remoteStorageMock.event
-                        remote[info.remoteMethod] = function()
+                        expect(remoteStorageMock.event).to.be.ok()
+                        local remote = remoteStorageMock.event :: Mocks.RemoteEventMock;
+                        (remote :: any)[info.remoteMethod] = function()
                             error('an error happened')
                         end
                         expect(function()
@@ -167,8 +189,9 @@ return function()
 
                     it('catches errors from one player when calling all players', function()
                         playerReady[otherPlayerMock] = true
-                        local remote = remoteStorageMock.event
-                        remote[info.remoteMethod] = function(_self, player)
+                        expect(remoteStorageMock.event).to.be.ok()
+                        local remote = remoteStorageMock.event :: Mocks.RemoteEventMock;
+                        (remote :: any)[info.remoteMethod] = function(_self, player: Player)
                             if player == playerMock then
                                 error('an error happened')
                             end
@@ -185,8 +208,9 @@ return function()
 
                 if info.remoteClass == 'RemoteFunction' then
                     it('collects player results', function()
-                        local remote = remoteStorageMock.event
-                        remote[info.remoteMethod] = function(_self, player)
+                        expect(remoteStorageMock.event).to.be.ok()
+                        local remote = remoteStorageMock.event :: Mocks.RemoteEventMock;
+                        (remote :: any)[info.remoteMethod] = function(_self, player: Player)
                             return 'value', player
                         end
                         local allCalled = nil
@@ -206,18 +230,23 @@ return function()
         end)
     end
 
-    local remoteToServerCases = {
+    type RemoteToServerCase = {
+        remoteClass: 'RemoteEvent' | 'RemoteFunction',
+        remoteMethod: 'FireClient' | 'InvokeClient',
+        fireRemote: (...any) -> (),
+    }
+    local remoteToServerCases: { [string]: RemoteToServerCase } = {
         addEventToServer = {
             remoteClass = 'RemoteEvent',
             remoteMethod = 'FireClient',
-            fireRemote = function(remote, ...)
+            fireRemote = function(remote, ...: any)
                 remote.OnServerEvent:Fire(...)
             end,
         },
         addFunctionToServer = {
             remoteClass = 'RemoteFunction',
             remoteMethod = 'InvokeClient',
-            fireRemote = function(remote, ...)
+            fireRemote = function(remote, ...: any)
                 if remote.OnServerInvoke then
                     return remote.OnServerInvoke(...)
                 end
@@ -248,8 +277,8 @@ return function()
                     'High'
                 )
 
-                local remote = remoteStorageMock.event
-                expect(remote).to.be.ok()
+                expect(remoteStorageMock.event).to.be.ok()
+                local remote = remoteStorageMock.event :: Mocks.RemoteEventMock
                 expect(remote.ClassName).to.equal(info.remoteClass)
                 expect(remote.Name).to.equal('module.process')
             end)
@@ -298,15 +327,15 @@ return function()
                         functionMock = Mocks.Function.new()
                         serverRemotes = newServerRemotes({
                             remoteStorage = remoteStorageMock,
-                            isPlayerReady = function(player)
+                            isPlayerReady = function(player: Player)
                                 return player == playerMock
                             end,
                             keyStorage = {
-                                verifyKey = function(_self, player)
+                                verifyKey = function(_self, player: Player)
                                     return player == playerMock
                                 end,
                                 setNewKey = function() end,
-                            },
+                            } :: any,
                         })
                         onUnapprovedExecution = Mocks.Function.new()
                         serverRemotes:setOnUnapprovedExecution(
@@ -367,10 +396,10 @@ return function()
                 end,
                 setNewKey = function() end,
                 clearPlayer = clearPlayerMock,
-            }
+            } :: any
             local serverRemotes = newServerRemotes({
                 remoteStorage = newRemoteStorageMock(),
-                isPlayerReady = function(player)
+                isPlayerReady = function(player: Player)
                     return player == playerMock
                 end,
                 keyStorage = keyStorageMock,
