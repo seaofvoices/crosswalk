@@ -32,12 +32,34 @@ type Private = {
     external: { [any]: any },
     _ranOnPlayerReady: { [Player]: true },
     shared: { [string]: any },
+    _onlyShared: { CrosswalkModule },
     server: { [string]: any },
+    _onlyServer: { CrosswalkModule },
     client: { [string]: any },
     serverRemotes: ServerRemotes,
     _reporter: Reporter.Reporter,
     _requireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
     _services: Services.Services,
+
+    _useNestedMode: boolean,
+    _localModules: { [ModuleScript]: { [string]: any } },
+    _loadNestedModule: (
+        self: ModuleLoader,
+        moduleScript: ModuleScript,
+        verifyName: (moduleName: string, localModules: { [string]: any }) -> (),
+        ...any
+    ) -> { CrosswalkModule },
+
+    _verifyServerModuleName: (
+        self: ModuleLoader,
+        moduleName: string,
+        localModules: { [string]: any }
+    ) -> (),
+    _verifySharedModuleName: (
+        self: ModuleLoader,
+        moduleName: string,
+        localModules: { [string]: any }
+    ) -> (),
 
     _loadSharedModules: (self: ModuleLoader) -> { CrosswalkModule },
     _loadServerModules: (self: ModuleLoader) -> { CrosswalkModule },
@@ -58,6 +80,7 @@ export type NewModuleLoaderOptions = {
     reporter: Reporter.Reporter?,
     requireModule: <T...>(moduleScript: ModuleScript, T...) -> ()?,
     services: Services.Services?,
+    useNestedMode: boolean?,
 }
 
 type ModuleLoaderStatic = ModuleLoader & Private & {
@@ -84,20 +107,20 @@ function ModuleLoader:loadModules()
     end
 
     self._reporter:debug('loading shared modules')
-    local onlySharedModules = self:_loadSharedModules()
+    self._onlyShared = self:_loadSharedModules()
 
     self._reporter:debug('loading server modules')
-    local onlyServerModules = self:_loadServerModules()
+    self._onlyServer = self:_loadServerModules()
 
     self._reporter:debug('calling `Init` for shared modules')
-    for _, module in ipairs(onlySharedModules) do
+    for _, module in self._onlyShared do
         if module.Init then
             module.Init()
         end
     end
 
     self._reporter:debug('calling `Init` for server modules')
-    for _, module in ipairs(onlyServerModules) do
+    for _, module in self._onlyServer do
         if module.Init then
             module.Init()
         end
@@ -107,14 +130,14 @@ function ModuleLoader:loadModules()
     self:_setupClientRemotes()
 
     self._reporter:debug('calling `Start` for shared modules')
-    for _, module in ipairs(onlySharedModules) do
+    for _, module in self._onlyShared do
         if module.Start then
             module.Start()
         end
     end
 
     self._reporter:debug('calling `Start` for server modules')
-    for _, module in ipairs(onlyServerModules) do
+    for _, module in self._onlyServer do
         if module.Start then
             module.Start()
         end
@@ -128,64 +151,113 @@ function ModuleLoader:_loadSharedModules(): { CrosswalkModule }
 
     local sharedModules = {}
 
-    for _, moduleScript in ipairs(self.sharedScripts) do
+    for _, moduleScript in self.sharedScripts do
         local moduleName = moduleScript.Name
         self._reporter:debug('loading shared module `%s`', moduleName)
 
-        self._reporter:assert(
-            self.external[moduleName] == nil,
-            'shared module named %q was already provided as an external server module. Rename '
-                .. 'the shared module or the external module',
-            moduleName
-        )
-        self._reporter:assert(
-            self.shared[moduleName] == nil,
-            'shared module named %q was already registered as a shared module',
-            moduleName
-        )
+        self:_verifySharedModuleName(moduleName, self.shared)
 
-        local module = self._requireModule(moduleScript, self.shared, self._services, true)
+        local localSharedModules = nil
+        if self._useNestedMode then
+            localSharedModules = {}
+            self._localModules[moduleScript] = localSharedModules
+        else
+            localSharedModules = self.shared
+        end
+
+        local module = self._requireModule(moduleScript, localSharedModules, self._services, true)
 
         if _G.DEV then
             validateSharedModule(module, moduleName, self._reporter)
         end
 
-        self.shared[moduleName] = module
+        localSharedModules[moduleName] = module
         self.server[moduleName] = module
+
+        if self._useNestedMode then
+            self.shared[moduleName] = module
+        end
+
         table.insert(sharedModules, module)
+    end
+
+    if self._useNestedMode then
+        for _, moduleScript in self.sharedScripts do
+            local nestedModules = self:_loadNestedModule(
+                moduleScript,
+                function(subModuleName, localModules)
+                    self:_verifySharedModuleName(subModuleName, localModules)
+                end,
+                self._services,
+                true
+            )
+            table.move(nestedModules, 1, #nestedModules, #sharedModules + 1, sharedModules)
+        end
     end
 
     return sharedModules
 end
 
-function ModuleLoader:_loadServerModules()
+function ModuleLoader:_verifySharedModuleName(moduleName: string, localModules: { [string]: any })
+    local self = self :: ModuleLoader & Private
+
+    self._reporter:assert(
+        self.external[moduleName] == nil,
+        'shared module named %q was already provided as an external server module. Rename '
+            .. 'the shared module or the external module',
+        moduleName
+    )
+    self._reporter:assert(
+        self.shared[moduleName] == nil,
+        'shared module named %q was already registered as a shared module',
+        moduleName
+    )
+end
+
+function ModuleLoader:_verifyServerModuleName(moduleName: string, localModules: { [string]: any })
+    local self = self :: ModuleLoader & Private
+
+    self._reporter:assert(
+        self.external[moduleName] == nil,
+        'server module named %q was already provided as an external server module. Rename '
+            .. 'the server module or the external module',
+        moduleName
+    )
+    self._reporter:assert(
+        self.shared[moduleName] == nil,
+        'server module named %q was already registered as a shared module',
+        moduleName
+    )
+    self._reporter:assert(
+        localModules[moduleName] == nil,
+        'server module named %q was already registered as a server module',
+        moduleName
+    )
+end
+
+function ModuleLoader:_loadServerModules(): { CrosswalkModule }
     local self = self :: ModuleLoader & Private
 
     local serverModules = {}
 
-    for _, moduleScript in ipairs(self.serverScripts) do
+    for _, moduleScript in self.serverScripts do
         local moduleName = moduleScript.Name
         self._reporter:debug('loading server module `%s`', moduleName)
 
-        self._reporter:assert(
-            self.external[moduleName] == nil,
-            'server module named %q was already provided as an external server module. Rename '
-                .. 'the server module or the external module',
-            moduleName
-        )
-        self._reporter:assert(
-            self.shared[moduleName] == nil,
-            'server module named %q was already registered as a shared module',
-            moduleName
-        )
-        self._reporter:assert(
-            self.server[moduleName] == nil,
-            'server module named %q was already registered as a server module',
-            moduleName
-        )
+        self:_verifyServerModuleName(moduleName, self.server)
+
+        local localServerModules = nil
+        if self._useNestedMode then
+            localServerModules = {}
+            self._localModules[moduleScript] = localServerModules
+        else
+            localServerModules = self.server
+        end
 
         local api = {}
-        local module = self._requireModule(moduleScript, self.server, self.client, self._services)
+
+        local module =
+            self._requireModule(moduleScript, localServerModules, self.client, self._services)
 
         for functionName, func in pairs(module) do
             if type(func) == 'function' then
@@ -276,17 +348,102 @@ function ModuleLoader:_loadServerModules()
             module[name] = newFunction
         end
 
-        self.server[moduleName] = module
+        localServerModules[moduleName] = module
+        if self._useNestedMode then
+            self.server[moduleName] = module
+        end
+
         table.insert(serverModules, module)
+    end
+
+    if self._useNestedMode then
+        for _, moduleScript in self.serverScripts do
+            local nestedModules = self:_loadNestedModule(
+                moduleScript,
+                function(subModuleName, localModules)
+                    self:_verifyServerModuleName(subModuleName, localModules)
+                end,
+                self.client,
+                self._services
+            )
+            table.move(nestedModules, 1, #nestedModules, #serverModules + 1, serverModules)
+        end
     end
 
     return serverModules
 end
 
+function ModuleLoader:_loadNestedModule(
+    moduleScript: ModuleScript,
+    verifyName: (
+        moduleName: string,
+        localModules: { [string]: any }
+    ) -> (),
+    ...
+): { CrosswalkModule }
+    local self = self :: ModuleLoader & Private
+
+    local children = moduleScript:GetChildren()
+
+    if #children == 0 then
+        return {}
+    end
+
+    local parentModules = self._localModules[moduleScript]
+    self._reporter:assert(
+        parentModules ~= nil,
+        'expected to find local modules of %s',
+        moduleScript:GetFullName()
+    )
+
+    self._reporter:debug('loading nested modules of `%s`:', moduleScript.Name)
+
+    local loadedModules = {}
+
+    for _, subModule in children do
+        if subModule:IsA('ModuleScript') then
+            local subModuleName = subModule.Name
+            self._reporter:debug('  > loading nested module `%s`', subModuleName)
+
+            verifyName(subModuleName, parentModules)
+
+            local subLocalModules = {}
+            self._localModules[subModule] = subLocalModules
+
+            local module = self._requireModule(subModule, subLocalModules, ...)
+
+            table.insert(loadedModules, module)
+            parentModules[subModuleName] = module
+        end
+    end
+
+    for _, subModule in children do
+        if subModule:IsA('ModuleScript') then
+            local localServerModules = self._localModules[subModule]
+
+            self._reporter:assert(
+                localServerModules ~= nil,
+                'expected to find server modules of %s',
+                subModule:GetFullName()
+            )
+
+            for name, module in parentModules do
+                localServerModules[name] = module
+            end
+
+            local nestedModules = self:_loadNestedModule(subModule, verifyName)
+
+            table.move(nestedModules, 1, #nestedModules, #loadedModules + 1, loadedModules)
+        end
+    end
+
+    return loadedModules
+end
+
 function ModuleLoader:_setupClientRemotes()
     local self = self :: ModuleLoader & Private
 
-    for _, moduleScript in ipairs(self.clientScripts) do
+    for _, moduleScript in self.clientScripts do
         local moduleName = moduleScript.Name
 
         self._reporter:assert(
@@ -474,7 +631,9 @@ function ModuleLoader.new(options: NewModuleLoaderOptions): ModuleLoader
     return setmetatable({
         _hasLoaded = false,
         shared = {},
+        _onlyShared = {},
         server = {},
+        _onlyServer = {},
         client = {},
         external = options.external or {},
         _ranOnPlayerReady = {},
@@ -485,6 +644,8 @@ function ModuleLoader.new(options: NewModuleLoaderOptions): ModuleLoader
         _reporter = options.reporter or Reporter.default(),
         _services = options.services or Services,
         _requireModule = options.requireModule or requireModule,
+        _useNestedMode = options.useNestedMode or false,
+        _localModules = {},
     }, ModuleLoaderMetatable) :: any
 end
 
