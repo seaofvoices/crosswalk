@@ -15,12 +15,12 @@ return function()
         end
     end
 
-    local playerMock
+    local playerMock: Player = nil
     local reporter
     local storage
     beforeEach(function()
         calls = {}
-        playerMock = { Name = PLAYER_NAME }
+        playerMock = { Name = PLAYER_NAME } :: any
         reporter = ReporterBuilder.new():onlyWarn():build()
 
         local keyCounter = 1

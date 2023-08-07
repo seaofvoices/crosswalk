@@ -1,16 +1,22 @@
---!nonstrict
 return function()
     local ModuleLoader = require('./ModuleLoader')
+    local ServerRemotes = require('./ServerRemotes')
 
     local Mocks = require('../Common/TestUtils/Mocks')
     local ReporterBuilder = require('../Common/TestUtils/ReporterBuilder')
 
     local moduleMocks = {}
-    local function requireMock(moduleScript)
+    local function requireMock(moduleScript: ModuleScript): any
         return moduleMocks[moduleScript]
     end
 
-    local function createServerRemotesMock()
+    type EventMock = { moduleName: string, name: string, func: any, security: string }
+    type ServerRemotesMock = ServerRemotes.ServerRemotes & {
+        events: { EventMock },
+        functions: { EventMock },
+        clearPlayer: Mocks.FunctionMock,
+    }
+    local function createServerRemotesMock(): ServerRemotesMock
         return {
             events = {},
             functions = {},
@@ -31,11 +37,19 @@ return function()
                 })
             end,
             clearPlayer = Mocks.Function.new(),
-        }
+        } :: any
     end
 
-    local function newModuleLoader(config)
-        config = config or {}
+    type NewModuleLoaderConfig = {
+        shared: { ModuleScript }?,
+        server: { ModuleScript }?,
+        client: { ModuleScript }?,
+        external: { [any]: any }?,
+        serverRemotes: ServerRemotes.ServerRemotes?,
+        reporter: ReporterBuilder.Reporter?,
+    }
+    local function newModuleLoader(config: NewModuleLoaderConfig?)
+        local config: NewModuleLoaderConfig = config or {}
         return ModuleLoader.new({
             shared = config.shared or {},
             server = config.server or {},
@@ -60,10 +74,18 @@ return function()
 
     local MODULE_FUNCTIONS = { 'Init', 'Start', 'OnPlayerReady', 'OnPlayerLeaving' }
 
-    local function generateModule(moduleName, options)
-        options = options or {}
+    local function generateModule(
+        moduleName: string,
+        options: {
+            Init: boolean?,
+            Start: boolean?,
+            OnPlayerReady: boolean?,
+            OnPlayerLeaving: boolean?,
+        }?
+    )
+        local options: { [string]: true } = options or {}
         local newModule = {}
-        for _, functionName in ipairs(MODULE_FUNCTIONS) do
+        for _, functionName in MODULE_FUNCTIONS do
             if options[functionName] == nil or options[functionName] then
                 newModule[functionName] = getEventLogger(('%s-%s'):format(moduleName, functionName))
             end
@@ -77,9 +99,9 @@ return function()
     end)
 
     describe('loadModules', function()
-        local moduleA = { Name = 'A' }
-        local moduleB = { Name = 'B' }
-        local moduleC = { Name = 'C' }
+        local moduleA: ModuleScript = { Name = 'A' } :: any
+        local moduleB: ModuleScript = { Name = 'B' } :: any
+        local moduleC: ModuleScript = { Name = 'C' } :: any
 
         beforeEach(function()
             callEvents = {}
@@ -228,7 +250,7 @@ return function()
                 local serverRemotesMock
                 beforeEach(function()
                     serverRemotesMock = createServerRemotesMock()
-                    moduleMocks[moduleA][concreteName] = function(arg)
+                    moduleMocks[moduleA][concreteName] = function(arg): any
                         if info.type == 'function' then
                             return true, 'ok:' .. arg
                         else
@@ -243,12 +265,16 @@ return function()
                 end)
 
                 it(('adds a %s to server'):format(info.type), function()
-                    local expectedKind = info.type == 'event' and 'events' or 'functions'
-                    local otherKind = info.type == 'event' and 'functions' or 'events'
-                    expect(#serverRemotesMock[expectedKind]).to.equal(1)
-                    expect(#serverRemotesMock[otherKind]).to.equal(0)
+                    local expectedKind: { EventMock } = if info.type == 'event'
+                        then serverRemotesMock.events
+                        else serverRemotesMock.functions
+                    local otherKind = if info.type == 'event'
+                        then serverRemotesMock.functions
+                        else serverRemotesMock.events
+                    expect(#expectedKind).to.equal(1)
+                    expect(#otherKind).to.equal(0)
 
-                    local event = serverRemotesMock[expectedKind][1]
+                    local event = expectedKind[1]
                     expect(event.moduleName).to.equal(moduleA.Name)
                     expect(event.name).to.equal(info.name)
                     expect(event.func).to.equal(moduleMocks[moduleA][concreteName])
@@ -480,7 +506,7 @@ return function()
 
                         callForgetValidation()
 
-                        local line, moduleCaller = debug.info(callForgetValidation, 'ls')
+                        local line: number, moduleCaller = debug.info(callForgetValidation, 'ls')
 
                         expect(#reporterMock.events).to.equal(1)
                         expect(reporterMock.events[1].message).to.equal(
@@ -547,8 +573,8 @@ return function()
     end)
 
     describe('onPlayerReady', function()
-        local moduleA = { Name = 'A' }
-        local moduleB = { Name = 'B' }
+        local moduleA: ModuleScript = { Name = 'A' } :: any
+        local moduleB: ModuleScript = { Name = 'B' } :: any
 
         beforeEach(function()
             callEvents = {}
@@ -596,8 +622,8 @@ return function()
     end)
 
     describe('onPlayerRemoving', function()
-        local moduleA = { Name = 'A' }
-        local moduleB = { Name = 'B' }
+        local moduleA: ModuleScript = { Name = 'A' } :: any
+        local moduleB: ModuleScript = { Name = 'B' } :: any
 
         beforeEach(function()
             callEvents = {}

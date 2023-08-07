@@ -8,10 +8,10 @@ local PlayerMockMetatable = {
     end,
 }
 
-local function new()
+local function new(): Player
     return setmetatable({
         Name = 'Player',
-    }, PlayerMockMetatable)
+    }, PlayerMockMetatable) :: any
 end
 
 return {

@@ -1,4 +1,3 @@
---!nonstrict
 return function()
     local RemoteStorage = require('./RemoteStorage')
 
@@ -18,7 +17,7 @@ return function()
 
     afterEach(function()
         remoteParent:Destroy()
-        remoteParent = nil
+        remoteParent = nil :: any
     end)
 
     describe('createEvent', function()

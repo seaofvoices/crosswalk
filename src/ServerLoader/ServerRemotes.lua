@@ -1,13 +1,109 @@
---!nonstrict
 local Players = game:GetService('Players')
 
 local Map2D = require('./Map2D')
+type Map2D<T, U, V> = Map2D.Map2D<T, U, V>
+local RemoteStorage = require('./RemoteStorage')
+type RemoteStorage = RemoteStorage.RemoteStorage
+local KeyStorage = require('./KeyStorage')
+type KeyStorage = KeyStorage.KeyStorage
 local Reporter = require('../Common/Reporter')
+type Reporter = Reporter.Reporter
 
-local ServerRemotes = {}
-local ServerRemotesMetatable = { __index = ServerRemotes }
+type RemoteSecurity = 'None' | 'Low' | 'High'
 
-function ServerRemotes:addEventToClient(moduleName, functionName)
+type RemoteInformation = {
+    Keys: { [string]: { [string]: string } },
+    Names: { [string]: { [string]: string } },
+    WaitForKeyNames: { [string]: { [string]: boolean } },
+    NameServerMap: { [string]: boolean },
+}
+
+export type ServerRemotes = {
+    addEventToClient: <Args...>(
+        self: ServerRemotes,
+        moduleName: string,
+        functionName: string
+    ) -> ((Player, Args...) -> (), (Args...) -> ()),
+    addFunctionToClient: (
+        self: ServerRemotes,
+        moduleName: string,
+        functionName: string
+    ) -> ((Player, ...any) -> any, (...any) -> (boolean, { [Player]: { [number]: any, n: number } })),
+    addEventToServer: <Args...>(
+        self: ServerRemotes,
+        moduleName: string,
+        functionName: string,
+        func: (Player, Args...) -> boolean,
+        security: RemoteSecurity?
+    ) -> (),
+    addFunctionToServer: <T..., U...>(
+        self: ServerRemotes,
+        moduleName: string,
+        functionName: string,
+        func: (Player, T...) -> (boolean, U...),
+        security: RemoteSecurity?
+    ) -> (),
+    getRemoteInformation: (self: ServerRemotes, player: Player) -> RemoteInformation,
+    setOnUnapprovedExecution: (
+        self: ServerRemotes,
+        callback: (Player, moduleName: string, functionName: string) -> ()
+    ) -> (),
+    clearPlayer: (self: ServerRemotes, player: Player) -> (),
+}
+
+type Private = {
+    nameServerMap: { [string]: boolean },
+    remotesToClient: Map2D<string, string, RemoteEvent | RemoteFunction>,
+    remotesToServer: Map2D<string, string, RemoteEvent | RemoteFunction>,
+    remoteSecurity: Map2D<string, string, RemoteSecurity>,
+    onUnapprovedExecution: (Player, moduleName: string, functionName: string) -> (),
+    isPlayerReady: (Player) -> boolean,
+    remoteStorage: RemoteStorage,
+    keyStorage: KeyStorage,
+    remoteCallMaxDelay: number,
+    playersService: Players,
+    reporter: Reporter,
+}
+
+type NewServerRemotesOptions = {
+    isPlayerReady: (Player) -> boolean,
+    remoteStorage: RemoteStorage,
+    keyStorage: KeyStorage,
+    remoteCallMaxDelay: number?,
+    reporter: Reporter?,
+    playersService: Players?,
+}
+
+type ServerRemotesStatic = ServerRemotes & Private & {
+    new: (NewServerRemotesOptions) -> ServerRemotes,
+}
+
+local ServerRemotes: ServerRemotesStatic = {} :: any
+local ServerRemotesMetatable = {
+    __index = ServerRemotes,
+}
+
+function ServerRemotes.new(options: NewServerRemotesOptions): ServerRemotes
+    return setmetatable({
+        nameServerMap = {},
+        remotesToClient = Map2D.new(),
+        remotesToServer = Map2D.new(),
+        remoteSecurity = Map2D.new(),
+        onUnapprovedExecution = function(_player, _module, _name) end,
+        isPlayerReady = options.isPlayerReady,
+        remoteStorage = options.remoteStorage,
+        keyStorage = options.keyStorage,
+        remoteCallMaxDelay = options.remoteCallMaxDelay or 2,
+        playersService = options.playersService or Players,
+        reporter = options.reporter or Reporter.default(),
+    }, ServerRemotesMetatable) :: any
+end
+
+function ServerRemotes:addEventToClient<Args...>(
+    moduleName: string,
+    functionName: string
+): ((Player, Args...) -> (), (Args...) -> ())
+    local self = self :: ServerRemotes & Private
     self.nameServerMap[moduleName] = false
 
     local remote = self.remoteStorage:createEvent(moduleName, functionName)
@@ -40,13 +136,20 @@ function ServerRemotes:addEventToClient(moduleName, functionName)
     return firePlayer, fireAllPlayers
 end
 
-function ServerRemotes:addFunctionToClient(moduleName, functionName)
+function ServerRemotes:addFunctionToClient(
+    moduleName: string,
+    functionName: string
+): ((Player, ...any) -> any, (
+    ...any
+) -> (boolean, { [Player]: { [number]: any, n: number } }))
+    local self = self :: ServerRemotes & Private
+
     self.nameServerMap[moduleName] = false
 
     local remote = self.remoteStorage:createFunction(moduleName, functionName)
     self.remotesToClient:insert(moduleName, functionName, remote)
 
-    local function firePlayer(player, ...)
+    local function firePlayer(player: Player, ...: any): any
         if _G.DEV then
             self.reporter:assert(
                 typeof(player) == 'Instance' and player:IsA('Player'),
@@ -63,7 +166,7 @@ function ServerRemotes:addFunctionToClient(moduleName, functionName)
         return
     end
 
-    local function fireAllPlayers(...)
+    local function fireAllPlayers(...): (boolean, { [Player]: { [number]: any, n: number } })
         local results = {}
         local totalPlayers = 0
         local totalResults = 0
@@ -95,8 +198,15 @@ function ServerRemotes:addFunctionToClient(moduleName, functionName)
     return firePlayer, fireAllPlayers
 end
 
-function ServerRemotes:addEventToServer(moduleName, functionName, func, security)
-    security = security or 'High'
+function ServerRemotes:addEventToServer<Args...>(
+    moduleName: string,
+    functionName: string,
+    func: (Player, Args...) -> boolean,
+    security: RemoteSecurity?
+)
+    local self = self :: ServerRemotes & Private
+
+    local security: RemoteSecurity = security or 'High'
 
     self.nameServerMap[moduleName] = true
 
@@ -135,8 +245,15 @@ function ServerRemotes:addEventToServer(moduleName, functionName, func, security
     end
 end
 
-function ServerRemotes:addFunctionToServer(moduleName, functionName, func, security)
-    security = security or 'High'
+function ServerRemotes:addFunctionToServer<T..., U...>(
+    moduleName: string,
+    functionName: string,
+    func: (Player, T...) -> (boolean, U...),
+    security: RemoteSecurity?
+)
+    local self = self :: ServerRemotes & Private
+
+    local security: RemoteSecurity = security or 'High'
 
     self.nameServerMap[moduleName] = true
 
@@ -186,7 +303,9 @@ function ServerRemotes:addFunctionToServer(moduleName, functionName, func, secur
     end
 end
 
-function ServerRemotes:getRemoteInformation(player)
+function ServerRemotes:getRemoteInformation(player: Player): RemoteInformation
+    local self = self :: ServerRemotes & Private
+
     local keys = {}
     local names = {}
     local waitForNames = {}
@@ -232,30 +351,16 @@ function ServerRemotes:getRemoteInformation(player)
     }
 end
 
-function ServerRemotes:setOnUnapprovedExecution(callback)
+function ServerRemotes:setOnUnapprovedExecution(callback: (Player, string, string) -> ())
+    local self = self :: ServerRemotes & Private
+
     self.onUnapprovedExecution = callback
 end
 
-function ServerRemotes:clearPlayer(player)
+function ServerRemotes:clearPlayer(player: Player)
+    local self = self :: ServerRemotes & Private
+
     self.keyStorage:clearPlayer(player)
 end
 
-local function new(options)
-    return setmetatable({
-        nameServerMap = {},
-        remotesToClient = Map2D.new(),
-        remotesToServer = Map2D.new(),
-        remoteSecurity = Map2D.new(),
-        onUnapprovedExecution = function(_player, _module, _name) end,
-        isPlayerReady = options.isPlayerReady,
-        remoteStorage = options.remoteStorage,
-        keyStorage = options.keyStorage,
-        remoteCallMaxDelay = options.remoteCallMaxDelay or 2,
-        playersService = options.playersService or Players,
-        reporter = options.reporter or Reporter.default(),
-    }, ServerRemotesMetatable)
-end
-
-return {
-    new = new,
-}
+return ServerRemotes

@@ -1,4 +1,9 @@
-local function requireModule(moduleScript, ...)
+export type CrosswalkModule = {
+    Init: (() -> ())?,
+    Start: (() -> ())?,
+}
+
+local function requireModule<T...>(moduleScript: ModuleScript, ...: T...): CrosswalkModule
     local success, moduleLoader = pcall(require, moduleScript)
     if not success then
         error(('Error while loading module %q : %s'):format(moduleScript.Name, moduleLoader))

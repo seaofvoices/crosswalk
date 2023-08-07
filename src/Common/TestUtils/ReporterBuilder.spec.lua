@@ -5,8 +5,8 @@ return function()
 
     for _, level in ipairs({ 'error', 'warn', 'info', 'debug' }) do
         it(('logs %s calls'):format(level), function()
-            local reporter = ReporterBuilder.new():build()
-            reporter[level](reporter, MESSAGE)
+            local reporter = ReporterBuilder.new():build();
+            (reporter :: any)[level](reporter, MESSAGE)
 
             expect(#reporter.events).to.equal(1)
             local event = reporter.events[1]
