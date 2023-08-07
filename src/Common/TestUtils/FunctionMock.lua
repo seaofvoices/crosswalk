@@ -2,10 +2,11 @@ type Call = {
     argumentCount: number,
     arguments: { any },
 }
+type AnyFn = (...any) -> any
 export type FunctionMock = {
-    getFunctionValue: (self: FunctionMock) -> () -> (),
-    returnSameValue: (self: FunctionMock) -> (),
-    setMockImplementation: (self: FunctionMock, callback: (...any) -> any) -> (),
+    getFunctionValue: (self: FunctionMock) -> AnyFn,
+    returnSameValue: (self: FunctionMock, ...any) -> AnyFn,
+    setMockImplementation: (self: FunctionMock, callback: AnyFn) -> AnyFn,
     call: (self: FunctionMock, ...any) -> any,
     expectCalls: (self: FunctionMock, expect: any, expectedCalls: {}) -> (),
     expectNeverCalled: (self: FunctionMock, expect: any) -> (),
@@ -37,7 +38,7 @@ function FunctionMock:getFunctionValue()
     return logger
 end
 
-function FunctionMock:returnSameValue(...)
+function FunctionMock:returnSameValue(...): AnyFn
     local self = self :: FunctionMock & Private
     local returnValues = table.pack(...)
     self._innerCall = function()
@@ -46,7 +47,7 @@ function FunctionMock:returnSameValue(...)
     return self:getFunctionValue()
 end
 
-function FunctionMock:setMockImplementation(callback)
+function FunctionMock:setMockImplementation(callback: AnyFn): AnyFn
     local self = self :: FunctionMock & Private
     self._innerCall = callback
     return self:getFunctionValue()

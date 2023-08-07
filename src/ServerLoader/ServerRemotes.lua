@@ -28,7 +28,10 @@ export type ServerRemotes = {
         self: ServerRemotes,
         moduleName: string,
         functionName: string
-    ) -> ((Player, ...any) -> any, (...any) -> (boolean, { [Player]: { [number]: any, n: number } })),
+    ) -> (
+        (Player, ...any) -> any,
+        (...any) -> (boolean, { [Player]: { [number]: any, n: number } })
+    ),
     addEventToServer: <Args...>(
         self: ServerRemotes,
         moduleName: string,

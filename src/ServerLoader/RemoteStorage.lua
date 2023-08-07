@@ -52,7 +52,7 @@ end
 function RemoteStorage:createFunction(moduleName: string, functionName: string): RemoteFunction
     local self = self :: RemoteStorage & Private
 
-    return self:_create('RemoteFunction', moduleName, functionName):: RemoteFunction
+    return self:_create('RemoteFunction', moduleName, functionName) :: RemoteFunction
 end
 
 function RemoteStorage:getRemoteId(moduleName: string, functionName: string): string
@@ -61,9 +61,9 @@ function RemoteStorage:getRemoteId(moduleName: string, functionName: string): st
     local id = self.remoteNameToIdMap:get(moduleName, functionName)
 
     if id ~= nil then
-        return   id
+        return id
     else
-        error("failed to obtain remote id")
+        error('failed to obtain remote id')
     end
 end
 
@@ -99,7 +99,7 @@ function RemoteStorage:_create(
     remote.Name = id
     remote.Parent = self.remoteParent
 
-    return remote ::any
+    return remote :: any
 end
 
 return RemoteStorage

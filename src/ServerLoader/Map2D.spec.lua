@@ -33,7 +33,7 @@ return function()
 
     it('inserts into an entry and get it back', function()
         local map = Map2D.new()
-        map:insert('a', 'b', false :: boolean| {})
+        map:insert('a', 'b', false :: boolean | {})
         local value = {}
         map:insert('a', 'b', value)
         expect(map:get('a', 'b')).to.equal(value)

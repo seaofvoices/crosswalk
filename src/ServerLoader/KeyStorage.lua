@@ -18,7 +18,7 @@ export type KeyStorage = {
 }
 
 type Private = {
-    _playerKeys: {[Player]: Map2D<string,string,string>},
+    _playerKeys: { [Player]: Map2D<string, string, string> },
     _sendKey: (Player, key: string, moduleName: string, functionName: string) -> (),
     _onKeyError: (Player, moduleName: string, functionName: string) -> (),
     _onKeyMissing: (Player, moduleName: string, functionName: string) -> (),
@@ -108,7 +108,7 @@ function KeyStorage:verifyKey(
 end
 
 function KeyStorage:clearPlayer(player: Player)
-    local self = self::KeyStorage & Private
+    local self = self :: KeyStorage & Private
     self._playerKeys[player] = nil
 end
 
