@@ -5,9 +5,11 @@ return function()
     type ClientRemotes = ClientRemotes.ClientRemotes
     local Mocks = require('../Common/TestUtils/Mocks')
     local ReporterBuilder = require('../Common/TestUtils/ReporterBuilder')
+    local createModuleScriptMock = require('../Common/TestUtils/createModuleScriptMock')
+    type ModuleScriptMock = createModuleScriptMock.ModuleScriptMock
 
     local moduleMocks = {}
-    local function requireMock(moduleScript)
+    local function requireMock(moduleScript: ModuleScript): any
         return moduleMocks[moduleScript]
     end
 
@@ -40,6 +42,7 @@ return function()
         player: Player?,
         clientRemotes: ClientRemotes?,
         reporter: ReporterBuilder.Reporter?,
+        useNestedMode: boolean?,
     }
     local function newModuleLoader(config: NewModuleLoaderConfig?)
         local config: NewModuleLoaderConfig = config or {}
@@ -51,6 +54,7 @@ return function()
             requireModule = requireMock,
             clientRemotes = config.clientRemotes or createClientRemotesMock(),
             reporter = config.reporter,
+            useNestedMode = config.useNestedMode,
         })
     end
 
@@ -84,14 +88,14 @@ return function()
     end)
 
     describe('loadModules', function()
-        local moduleA: ModuleScript
-        local moduleB: ModuleScript
-        local moduleC: ModuleScript
+        local moduleA: ModuleScriptMock
+        local moduleB: ModuleScriptMock
+        local moduleC: ModuleScriptMock
 
         beforeEach(function()
-            moduleA = { Name = 'A' } :: any
-            moduleB = { Name = 'B' } :: any
-            moduleC = { Name = 'C' } :: any
+            moduleA = createModuleScriptMock('A')
+            moduleB = createModuleScriptMock('B')
+            moduleC = createModuleScriptMock('C')
 
             moduleMocks = {
                 [moduleA] = generateModule('A', {
@@ -262,6 +266,121 @@ return function()
             expect(function()
                 moduleLoader:loadModules()
             end).to.throw()
+        end)
+
+        describe('use nested mode', function()
+            local moduleD: ModuleScriptMock
+
+            beforeEach(function()
+                moduleD = createModuleScriptMock('D')
+                callEvents = {}
+                moduleMocks = {
+                    [moduleA] = generateModule('A', {
+                        OnPlayerReady = false,
+                        OnPlayerLeaving = false,
+                    }),
+                    [moduleB] = generateModule('B', {
+                        OnPlayerReady = false,
+                        OnPlayerLeaving = false,
+                    }),
+                    [moduleC] = generateModule('C', {
+                        OnPlayerReady = false,
+                        OnPlayerLeaving = false,
+                    }),
+                    [moduleD] = generateModule('D', {
+                        OnPlayerReady = false,
+                        OnPlayerLeaving = false,
+                    }),
+                }
+            end)
+
+            for _, moduleKind in { 'client', 'shared' } do
+                describe(('with %s modules'):format(moduleKind), function()
+                    it('loads a nested module', function()
+                        moduleB.GetChildren:returnSameValue({ moduleC })
+
+                        local moduleLoader = newModuleLoader({
+                            [moduleKind] = { moduleA, moduleB },
+                            useNestedMode = true,
+                        } :: any)
+                        moduleLoader:loadModules()
+
+                        expect(#callEvents).to.equal(6)
+
+                        expect(callEvents[1].label).to.equal('A-Init')
+                        expect(callEvents[2].label).to.equal('B-Init')
+                        expect(callEvents[3].label).to.equal('C-Init')
+                        expect(callEvents[4].label).to.equal('A-Start')
+                        expect(callEvents[5].label).to.equal('B-Start')
+                        expect(callEvents[6].label).to.equal('C-Start')
+                    end)
+
+                    it('loads a nested module in a nested module', function()
+                        moduleA.GetChildren:returnSameValue({ moduleB })
+                        moduleB.GetChildren:returnSameValue({ moduleC })
+
+                        local moduleLoader = newModuleLoader({
+                            [moduleKind] = { moduleA },
+                            useNestedMode = true,
+                        } :: any)
+                        moduleLoader:loadModules()
+
+                        expect(#callEvents).to.equal(6)
+
+                        expect(callEvents[1].label).to.equal('A-Init')
+                        expect(callEvents[2].label).to.equal('B-Init')
+                        expect(callEvents[3].label).to.equal('C-Init')
+                        expect(callEvents[4].label).to.equal('A-Start')
+                        expect(callEvents[5].label).to.equal('B-Start')
+                        expect(callEvents[6].label).to.equal('C-Start')
+                    end)
+
+                    it('loads two nested modules', function()
+                        moduleA.GetChildren:returnSameValue({ moduleB })
+                        moduleC.GetChildren:returnSameValue({ moduleD })
+
+                        local moduleLoader = newModuleLoader({
+                            [moduleKind] = { moduleA, moduleC },
+                            useNestedMode = true,
+                        } :: any)
+                        moduleLoader:loadModules()
+
+                        expect(#callEvents).to.equal(8)
+
+                        expect(callEvents[1].label).to.equal('A-Init')
+                        expect(callEvents[2].label).to.equal('C-Init')
+                        expect(callEvents[3].label).to.equal('B-Init')
+                        expect(callEvents[4].label).to.equal('D-Init')
+                        expect(callEvents[5].label).to.equal('A-Start')
+                        expect(callEvents[6].label).to.equal('C-Start')
+                        expect(callEvents[7].label).to.equal('B-Start')
+                        expect(callEvents[8].label).to.equal('D-Start')
+                    end)
+                end)
+            end
+
+            it('calls `Init` function on nested shared modules before client modules', function()
+                moduleA.GetChildren:returnSameValue({ moduleB })
+                moduleC.GetChildren:returnSameValue({ moduleD })
+
+                local moduleLoader = newModuleLoader({
+                    shared = { moduleA },
+                    client = { moduleC },
+                    useNestedMode = true,
+                })
+                moduleLoader:loadModules()
+
+                expect(#callEvents).to.equal(8)
+
+                expect(callEvents[1].label).to.equal('A-Init')
+                expect(callEvents[2].label).to.equal('B-Init')
+                expect(callEvents[3].label).to.equal('C-Init')
+                expect(callEvents[4].label).to.equal('D-Init')
+                expect(callEvents[5].label).to.equal('A-Start')
+                expect(callEvents[6].label).to.equal('B-Start')
+                expect(callEvents[7].label).to.equal('C-Start')
+                expect(callEvents[8].label).to.equal('D-Start')
+            end)
         end)
     end)
 end

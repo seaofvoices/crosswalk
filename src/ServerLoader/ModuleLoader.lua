@@ -4,6 +4,7 @@ local Reporter = require('../Common/Reporter')
 type Reporter = Reporter.Reporter
 local requireModule = require('../Common/requireModule')
 type CrosswalkModule = requireModule.CrosswalkModule
+local loadNestedModules = require('../Common/loadNestedModules')
 local validateSharedModule = require('../Common/validateSharedModule')
 local extractFunctionName = require('../Common/extractFunctionName')
 local ServerRemotes = require('./ServerRemotes')
@@ -384,61 +385,14 @@ function ModuleLoader:_loadNestedModule(
 ): { CrosswalkModule }
     local self = self :: ModuleLoader & Private
 
-    local children = moduleScript:GetChildren()
-
-    if #children == 0 then
-        return {}
-    end
-
-    local parentModules = self._localModules[moduleScript]
-    self._reporter:assert(
-        parentModules ~= nil,
-        'expected to find local modules of %s',
-        moduleScript:GetFullName()
+    return loadNestedModules(
+        moduleScript,
+        self._reporter,
+        self._requireModule,
+        self._localModules,
+        verifyName,
+        ...
     )
-
-    self._reporter:debug('loading nested modules of `%s`:', moduleScript.Name)
-
-    local loadedModules = {}
-
-    for _, subModule in children do
-        if subModule:IsA('ModuleScript') then
-            local subModuleName = subModule.Name
-            self._reporter:debug('  > loading nested module `%s`', subModuleName)
-
-            verifyName(subModuleName, parentModules)
-
-            local subLocalModules = {}
-            self._localModules[subModule] = subLocalModules
-
-            local module = self._requireModule(subModule, subLocalModules, ...)
-
-            table.insert(loadedModules, module)
-            parentModules[subModuleName] = module
-        end
-    end
-
-    for _, subModule in children do
-        if subModule:IsA('ModuleScript') then
-            local localServerModules = self._localModules[subModule]
-
-            self._reporter:assert(
-                localServerModules ~= nil,
-                'expected to find server modules of %s',
-                subModule:GetFullName()
-            )
-
-            for name, module in parentModules do
-                localServerModules[name] = module
-            end
-
-            local nestedModules = self:_loadNestedModule(subModule, verifyName)
-
-            table.move(nestedModules, 1, #nestedModules, #loadedModules + 1, loadedModules)
-        end
-    end
-
-    return loadedModules
 end
 
 function ModuleLoader:_setupClientRemotes()

@@ -4,6 +4,7 @@ local requireModule = require('../Common/requireModule')
 type CrosswalkModule = requireModule.CrosswalkModule
 local Reporter = require('../Common/Reporter')
 type Reporter = Reporter.Reporter
+local loadNestedModules = require('../Common/loadNestedModules')
 local validateSharedModule = require('../Common/validateSharedModule')
 local ClientRemotes = require('./ClientRemotes')
 type ClientRemotes = ClientRemotes.ClientRemotes
@@ -17,19 +18,32 @@ export type ClientModuleLoader = {
 
 type Private = {
     _hasLoaded: boolean,
-    player: Player,
-    clientScripts: { ModuleScript },
-    sharedScripts: { ModuleScript },
-    external: { [string]: any },
-    shared: { [string]: any },
-    client: { [string]: any },
-    clientRemotes: ClientRemotes,
-    reporter: Reporter,
+    _player: Player,
+    _clientScripts: { ModuleScript },
+    _sharedScripts: { ModuleScript },
+    _external: { [string]: any },
+    _shared: { [string]: any },
+    _client: { [string]: any },
+    _clientRemotes: ClientRemotes,
+    _reporter: Reporter,
     _requireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
     _services: Services,
 
     _loadSharedModules: (self: ClientModuleLoader) -> { CrosswalkModule },
     _loadClientModules: (self: ClientModuleLoader) -> { CrosswalkModule },
+    _verifyClientModuleName: (
+        self: ClientModuleLoader,
+        moduleName: string,
+        localModules: { [string]: any }
+    ) -> (),
+    _verifySharedModuleName: (
+        self: ClientModuleLoader,
+        moduleName: string,
+        localModules: { [string]: any }
+    ) -> (),
+
+    _useNestedMode: boolean,
+    _localModules: { [ModuleScript]: { [string]: any } },
 }
 
 type NewClientModuleLoaderOptions = {
@@ -56,59 +70,59 @@ local ClientModuleLoaderMetatable = {
 function ClientModuleLoader:loadModules()
     local self = self :: ClientModuleLoader & Private
 
-    self.reporter:assert(
+    self._reporter:assert(
         not self._hasLoaded,
         'modules were already loaded once and cannot be loaded twice!'
     )
 
-    self.clientRemotes:listen()
+    self._clientRemotes:listen()
 
-    for moduleName, externalModule in pairs(self.external) do
-        self.reporter:debug('adding external module `%s`', moduleName)
-        self.shared[moduleName] = externalModule
-        self.client[moduleName] = externalModule
+    for moduleName, externalModule in self._external do
+        self._reporter:debug('adding external module `%s`', moduleName)
+        self._shared[moduleName] = externalModule
+        self._client[moduleName] = externalModule
     end
 
-    self.reporter:debug('loading shared modules')
+    self._reporter:debug('loading shared modules')
     local onlySharedModules = self:_loadSharedModules()
 
-    self.reporter:debug('loading client modules')
+    self._reporter:debug('loading client modules')
     local onlyClientModules = self:_loadClientModules()
 
-    self.reporter:debug('calling `Init` for shared modules')
+    self._reporter:debug('calling `Init` for shared modules')
     for _, module in onlySharedModules do
         if module.Init then
             module.Init()
         end
     end
 
-    self.reporter:debug('calling `Init` for client modules')
+    self._reporter:debug('calling `Init` for client modules')
     for _, module in onlyClientModules do
         if module.Init then
             module.Init()
         end
     end
 
-    self.reporter:debug('calling `Start` for shared modules')
+    self._reporter:debug('calling `Start` for shared modules')
     for _, module in onlySharedModules do
         if module.Start then
             module.Start()
         end
     end
 
-    self.reporter:debug('calling `Start` for client modules')
+    self._reporter:debug('calling `Start` for client modules')
     for _, module in onlyClientModules do
         if module.Start then
             module.Start()
         end
     end
 
-    self.clientRemotes:fireReadyRemote()
+    self._clientRemotes:fireReadyRemote()
 
-    self.reporter:debug('calling `OnPlayerReady` for client modules')
+    self._reporter:debug('calling `OnPlayerReady` for client modules')
     for _, module in onlyClientModules do
         if module.OnPlayerReady then
-            task.spawn(module.OnPlayerReady, self.player)
+            task.spawn(module.OnPlayerReady, self._player)
         end
     end
 
@@ -119,64 +133,98 @@ function ClientModuleLoader:_loadSharedModules(): { CrosswalkModule }
     local self = self :: ClientModuleLoader & Private
 
     local sharedModules = {}
-    for _, moduleScript in ipairs(self.sharedScripts) do
+    for _, moduleScript in self._sharedScripts do
         local moduleName = moduleScript.Name
-        self.reporter:debug('loading shared module `%s`', moduleName)
+        self._reporter:debug('loading shared module `%s`', moduleName)
 
-        self.reporter:assert(
-            self.external[moduleName] == nil,
-            'shared module named %q was already provided as an external client module. Rename '
-                .. 'the shared module or the external module',
-            moduleName
-        )
-        self.reporter:assert(
-            self.shared[moduleName] == nil,
-            'shared module named %q was already registered as a shared module',
-            moduleName
-        )
+        self:_verifySharedModuleName(moduleName, self._shared)
 
-        local module = self._requireModule(moduleScript, self.shared, self._services, false)
-
-        if _G.DEV then
-            validateSharedModule(module, moduleName, self.reporter)
+        local localSharedModules = nil
+        if self._useNestedMode then
+            localSharedModules = {}
+            self._localModules[moduleScript] = localSharedModules
+        else
+            localSharedModules = self._shared
         end
 
-        self.shared[moduleName] = module
-        self.client[moduleName] = module
+        local module = self._requireModule(moduleScript, localSharedModules, self._services, false)
+
+        if _G.DEV then
+            validateSharedModule(module, moduleName, self._reporter)
+        end
+
+        localSharedModules[moduleName] = module
+        self._client[moduleName] = module
+
+        if self._useNestedMode then
+            self._shared[moduleName] = module
+        end
+
         table.insert(sharedModules, module)
     end
+
+    if self._useNestedMode then
+        for _, moduleScript in self._sharedScripts do
+            local nestedModules = loadNestedModules(
+                moduleScript,
+                self._reporter,
+                self._requireModule,
+                self._localModules,
+                function(subModuleName, localModules)
+                    self:_verifySharedModuleName(subModuleName, localModules)
+                end,
+                self._services,
+                false
+            )
+            table.move(nestedModules, 1, #nestedModules, #sharedModules + 1, sharedModules)
+        end
+    end
+
     return sharedModules
+end
+
+function ClientModuleLoader:_verifySharedModuleName(
+    moduleName: string,
+    localModules: { [string]: any }
+)
+    local self = self :: ClientModuleLoader & Private
+
+    self._reporter:assert(
+        self._external[moduleName] == nil,
+        'shared module named %q was already provided as an external client module. Rename '
+            .. 'the shared module or the external module',
+        moduleName
+    )
+    self._reporter:assert(
+        localModules[moduleName] == nil,
+        'shared module named %q was already registered as a shared module',
+        moduleName
+    )
 end
 
 function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
     local self = self :: ClientModuleLoader & Private
 
     local clientModules = {}
-    local serverModules = self.clientRemotes:getServerModules()
+    local serverModules = self._clientRemotes:getServerModules()
 
-    for _, moduleScript in self.clientScripts do
+    for _, moduleScript in self._clientScripts do
         local moduleName = moduleScript.Name
-        self.reporter:debug('loading client module `%s`', moduleName)
+        self._reporter:debug('loading client module `%s`', moduleName)
 
-        self.reporter:assert(
-            self.external[moduleName] == nil,
-            'client module named %q was already provided as an external client module. Rename '
-                .. 'the client module or the external module',
-            moduleName
-        )
-        self.reporter:assert(
-            self.shared[moduleName] == nil,
-            'client module named %q was already registered as a shared module',
-            moduleName
-        )
-        self.reporter:assert(
-            self.client[moduleName] == nil,
-            'client module named %q was already registered as a client module',
-            moduleName
-        )
+        self:_verifyClientModuleName(moduleName, self._client)
+
+        local localClientModules = nil
+        if self._useNestedMode then
+            localClientModules = {}
+            self._localModules[moduleScript] = localClientModules
+        else
+            localClientModules = self._client
+        end
 
         local api = {}
-        local module = self._requireModule(moduleScript, self.client, serverModules, self._services)
+        local module =
+            self._requireModule(moduleScript, localClientModules, serverModules, self._services)
 
         for functionName, callback in pairs(module) do
             if type(callback) == 'function' then
@@ -190,7 +238,7 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
                 if name then
                     -- name collisions validation is done in the server ModuleLoader
                     api[name] = callback
-                    self.clientRemotes:connectRemote(moduleName, name, callback)
+                    self._clientRemotes:connectRemote(moduleName, name, callback)
                 end
             end
         end
@@ -199,27 +247,72 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
             module[name] = newFunction
         end
 
-        self.client[moduleName] = module
+        localClientModules[moduleName] = module
+        if self._useNestedMode then
+            self._client[moduleName] = module
+        end
         table.insert(clientModules, module)
+    end
+
+    if self._useNestedMode then
+        for _, moduleScript in self._clientScripts do
+            local nestedModules = loadNestedModules(
+                moduleScript,
+                self._reporter,
+                self._requireModule,
+                self._localModules,
+                function(subModuleName, localModules)
+                    self:_verifyClientModuleName(subModuleName, localModules)
+                end,
+                serverModules,
+                self._services
+            )
+            table.move(nestedModules, 1, #nestedModules, #clientModules + 1, clientModules)
+        end
     end
 
     return clientModules
 end
 
+function ClientModuleLoader:_verifyClientModuleName(
+    moduleName: string,
+    localModules: { [string]: any }
+)
+    local self = self :: ClientModuleLoader & Private
+
+    self._reporter:assert(
+        self._external[moduleName] == nil,
+        'client module named %q was already provided as an external client module. Rename '
+            .. 'the client module or the external module',
+        moduleName
+    )
+    self._reporter:assert(
+        self._shared[moduleName] == nil,
+        'client module named %q was already registered as a shared module',
+        moduleName
+    )
+    self._reporter:assert(
+        localModules[moduleName] == nil,
+        'client module named %q was already registered as a client module',
+        moduleName
+    )
+end
+
 function ClientModuleLoader.new(options: NewClientModuleLoaderOptions): ClientModuleLoader
     return setmetatable({
         _hasLoaded = false,
-        shared = {},
-        client = {},
-        external = options.external or {},
-        sharedScripts = options.shared,
-        clientScripts = options.client,
-        player = options.player,
-        clientRemotes = options.clientRemotes,
+        _shared = {},
+        _client = {},
+        _external = options.external or {},
+        _sharedScripts = options.shared,
+        _clientScripts = options.client,
+        _player = options.player,
+        _clientRemotes = options.clientRemotes,
         _requireModule = options.requireModule or requireModule,
-        reporter = options.reporter or Reporter.default(),
+        _reporter = options.reporter or Reporter.default(),
         _services = options.services or ClientServices,
-        useNestedMode = options.useNestedMode or false,
+        _useNestedMode = options.useNestedMode or false,
+        _localModules = {},
     }, ClientModuleLoaderMetatable) :: any
 end
 

@@ -4,6 +4,8 @@ return function()
 
     local Mocks = require('../Common/TestUtils/Mocks')
     local ReporterBuilder = require('../Common/TestUtils/ReporterBuilder')
+    local createModuleScriptMock = require('../Common/TestUtils/createModuleScriptMock')
+    type ModuleScriptMock = createModuleScriptMock.ModuleScriptMock
 
     local moduleMocks = {}
     local function requireMock(moduleScript: ModuleScript): any
@@ -100,33 +102,15 @@ return function()
         moduleMocks = {}
     end)
 
-    type ModuleScriptMock = ModuleScript & {
-        GetChildren: Mocks.FunctionMock,
-    }
-    local function newModuleScriptMock(name: string): ModuleScriptMock
-        local getChildren = Mocks.Function.new()
-        getChildren:setMockImplementation(function()
-            return {}
-        end)
-        return {
-            Name = name,
-            GetChildren = getChildren,
-            GetFullName = Mocks.Function.new():returnSameValue('game.' .. name),
-            IsA = Mocks.Function.new():setMockImplementation(function(_self, className: string)
-                return className == 'ModuleScript'
-            end),
-        } :: any
-    end
-
     describe('loadModules', function()
         local moduleA: ModuleScriptMock
         local moduleB: ModuleScriptMock
         local moduleC: ModuleScriptMock
 
         beforeEach(function()
-            moduleA = newModuleScriptMock('A')
-            moduleB = newModuleScriptMock('B')
-            moduleC = newModuleScriptMock('C')
+            moduleA = createModuleScriptMock('A')
+            moduleB = createModuleScriptMock('B')
+            moduleC = createModuleScriptMock('C')
 
             callEvents = {}
             moduleMocks = {
@@ -586,7 +570,7 @@ return function()
             local moduleD: ModuleScriptMock
 
             beforeEach(function()
-                moduleD = newModuleScriptMock('D')
+                moduleD = createModuleScriptMock('D')
                 callEvents = {}
                 moduleMocks = {
                     [moduleA] = generateModule('A', {
@@ -634,9 +618,9 @@ return function()
                         moduleB.GetChildren:returnSameValue({ moduleC })
 
                         local moduleLoader = newModuleLoader({
-                            server = { moduleA },
+                            [moduleKind] = { moduleA },
                             useNestedMode = true,
-                        })
+                        } :: any)
                         moduleLoader:loadModules()
 
                         expect(#callEvents).to.equal(6)
@@ -654,9 +638,9 @@ return function()
                         moduleC.GetChildren:returnSameValue({ moduleD })
 
                         local moduleLoader = newModuleLoader({
-                            server = { moduleA, moduleC },
+                            [moduleKind] = { moduleA, moduleC },
                             useNestedMode = true,
-                        })
+                        } :: any)
                         moduleLoader:loadModules()
 
                         expect(#callEvents).to.equal(8)
@@ -712,10 +696,12 @@ return function()
     end)
 
     describe('onPlayerReady', function()
-        local moduleA = newModuleScriptMock('A')
-        local moduleB = newModuleScriptMock('B')
+        local moduleA: ModuleScriptMock
+        local moduleB: ModuleScriptMock
 
         beforeEach(function()
+            moduleA = createModuleScriptMock('A')
+            moduleB = createModuleScriptMock('B')
             callEvents = {}
             moduleMocks = {
                 [moduleA] = generateModule('A'),
@@ -761,10 +747,13 @@ return function()
     end)
 
     describe('onPlayerRemoving', function()
-        local moduleA = newModuleScriptMock('A')
-        local moduleB = newModuleScriptMock('B')
+        local moduleA: ModuleScriptMock
+        local moduleB: ModuleScriptMock
 
         beforeEach(function()
+            moduleA = createModuleScriptMock('A')
+            moduleB = createModuleScriptMock('B')
+
             callEvents = {}
             moduleMocks = {
                 [moduleA] = generateModule('A'),
