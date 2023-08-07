@@ -1,7 +1,8 @@
---!nonstrict
 return function()
     local ClientModuleLoader = require('./ClientModuleLoader')
 
+    local ClientRemotes = require('./ClientRemotes')
+    type ClientRemotes = ClientRemotes.ClientRemotes
     local Mocks = require('../Common/TestUtils/Mocks')
     local ReporterBuilder = require('../Common/TestUtils/ReporterBuilder')
 
@@ -10,7 +11,7 @@ return function()
         return moduleMocks[moduleScript]
     end
 
-    local function createClientRemotesMock()
+    local function createClientRemotesMock(): ClientRemotes
         return {
             _remotes = {},
             _serverModules = {},
@@ -29,11 +30,19 @@ return function()
                 end
             end,
             fireReadyRemote = Mocks.Function.new(),
-        }
+        } :: any
     end
 
-    local function newModuleLoader(config)
-        config = config or {}
+    type NewModuleLoaderConfig = {
+        shared: { ModuleScript }?,
+        client: { ModuleScript }?,
+        external: { [string]: any }?,
+        player: Player?,
+        clientRemotes: ClientRemotes?,
+        reporter: ReporterBuilder.Reporter?,
+    }
+    local function newModuleLoader(config: NewModuleLoaderConfig?)
+        local config: NewModuleLoaderConfig = config or {}
         return ClientModuleLoader.new({
             shared = config.shared or {},
             client = config.client or {},
@@ -75,11 +84,15 @@ return function()
     end)
 
     describe('loadModules', function()
-        local moduleA = { Name = 'A' }
-        local moduleB = { Name = 'B' }
-        local moduleC = { Name = 'C' }
+        local moduleA: ModuleScript
+        local moduleB: ModuleScript
+        local moduleC: ModuleScript
 
         beforeEach(function()
+            moduleA = { Name = 'A' } :: any
+            moduleB = { Name = 'B' } :: any
+            moduleC = { Name = 'C' } :: any
+
             moduleMocks = {
                 [moduleA] = generateModule('A', {
                     OnPlayerReady = false,

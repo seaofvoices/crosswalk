@@ -1,16 +1,61 @@
---!nonstrict
 local ClientServices = require('./ClientServices')
+type Services = ClientServices.Services
 local requireModule = require('../Common/requireModule')
+type CrosswalkModule = requireModule.CrosswalkModule
 local Reporter = require('../Common/Reporter')
+type Reporter = Reporter.Reporter
 local validateSharedModule = require('../Common/validateSharedModule')
+local ClientRemotes = require('./ClientRemotes')
+type ClientRemotes = ClientRemotes.ClientRemotes
 
 local EVENT_PATTERN = '_event$'
 local FUNCTION_PATTERN = '_func$'
 
-local ClientModuleLoader = {}
-local ClientModuleLoaderMetatable = { __index = ClientModuleLoader }
+export type ClientModuleLoader = {
+    loadModules: (self: ClientModuleLoader) -> (),
+}
+
+type Private = {
+    _hasLoaded: boolean,
+    player: Player,
+    clientScripts: { ModuleScript },
+    sharedScripts: { ModuleScript },
+    external: { [string]: any },
+    shared: { [string]: any },
+    client: { [string]: any },
+    clientRemotes: ClientRemotes,
+    reporter: Reporter,
+    _requireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
+    _services: Services,
+
+    _loadSharedModules: (self: ClientModuleLoader) -> { CrosswalkModule },
+    _loadClientModules: (self: ClientModuleLoader) -> { CrosswalkModule },
+}
+
+type NewClientModuleLoaderOptions = {
+    player: Player,
+    client: { ModuleScript },
+    shared: { ModuleScript },
+    external: { [string]: any }?,
+    clientRemotes: ClientRemotes,
+    reporter: Reporter?,
+    requireModule: <T...>(moduleScript: ModuleScript, T...) -> ()?,
+    services: Services?,
+    useNestedMode: boolean?,
+}
+
+type ClientModuleLoaderStatic = ClientModuleLoader & Private & {
+    new: (options: NewClientModuleLoaderOptions) -> ClientModuleLoader,
+}
+
+local ClientModuleLoader: ClientModuleLoaderStatic = {} :: any
+local ClientModuleLoaderMetatable = {
+    __index = ClientModuleLoader,
+}
 
 function ClientModuleLoader:loadModules()
+    local self = self :: ClientModuleLoader & Private
+
     self.reporter:assert(
         not self._hasLoaded,
         'modules were already loaded once and cannot be loaded twice!'
@@ -31,28 +76,28 @@ function ClientModuleLoader:loadModules()
     local onlyClientModules = self:_loadClientModules()
 
     self.reporter:debug('calling `Init` for shared modules')
-    for _, module in ipairs(onlySharedModules) do
+    for _, module in onlySharedModules do
         if module.Init then
             module.Init()
         end
     end
 
     self.reporter:debug('calling `Init` for client modules')
-    for _, module in ipairs(onlyClientModules) do
+    for _, module in onlyClientModules do
         if module.Init then
             module.Init()
         end
     end
 
     self.reporter:debug('calling `Start` for shared modules')
-    for _, module in ipairs(onlySharedModules) do
+    for _, module in onlySharedModules do
         if module.Start then
             module.Start()
         end
     end
 
     self.reporter:debug('calling `Start` for client modules')
-    for _, module in ipairs(onlyClientModules) do
+    for _, module in onlyClientModules do
         if module.Start then
             module.Start()
         end
@@ -61,7 +106,7 @@ function ClientModuleLoader:loadModules()
     self.clientRemotes:fireReadyRemote()
 
     self.reporter:debug('calling `OnPlayerReady` for client modules')
-    for _, module in ipairs(onlyClientModules) do
+    for _, module in onlyClientModules do
         if module.OnPlayerReady then
             task.spawn(module.OnPlayerReady, self.player)
         end
@@ -70,7 +115,9 @@ function ClientModuleLoader:loadModules()
     self._hasLoaded = true
 end
 
-function ClientModuleLoader:_loadSharedModules()
+function ClientModuleLoader:_loadSharedModules(): { CrosswalkModule }
+    local self = self :: ClientModuleLoader & Private
+
     local sharedModules = {}
     for _, moduleScript in ipairs(self.sharedScripts) do
         local moduleName = moduleScript.Name
@@ -88,7 +135,7 @@ function ClientModuleLoader:_loadSharedModules()
             moduleName
         )
 
-        local module = self.requireModule(moduleScript, self.shared, self.services, false)
+        local module = self._requireModule(moduleScript, self.shared, self._services, false)
 
         if _G.DEV then
             validateSharedModule(module, moduleName, self.reporter)
@@ -101,11 +148,13 @@ function ClientModuleLoader:_loadSharedModules()
     return sharedModules
 end
 
-function ClientModuleLoader:_loadClientModules()
+function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
+    local self = self :: ClientModuleLoader & Private
+
     local clientModules = {}
     local serverModules = self.clientRemotes:getServerModules()
 
-    for _, moduleScript in ipairs(self.clientScripts) do
+    for _, moduleScript in self.clientScripts do
         local moduleName = moduleScript.Name
         self.reporter:debug('loading client module `%s`', moduleName)
 
@@ -127,7 +176,7 @@ function ClientModuleLoader:_loadClientModules()
         )
 
         local api = {}
-        local module = self.requireModule(moduleScript, self.client, serverModules, self.services)
+        local module = self._requireModule(moduleScript, self.client, serverModules, self._services)
 
         for functionName, callback in pairs(module) do
             if type(callback) == 'function' then
@@ -146,7 +195,7 @@ function ClientModuleLoader:_loadClientModules()
             end
         end
 
-        for name, newFunction in pairs(api) do
+        for name, newFunction in api do
             module[name] = newFunction
         end
 
@@ -157,7 +206,7 @@ function ClientModuleLoader:_loadClientModules()
     return clientModules
 end
 
-local function new(options)
+function ClientModuleLoader.new(options: NewClientModuleLoaderOptions): ClientModuleLoader
     return setmetatable({
         _hasLoaded = false,
         shared = {},
@@ -167,12 +216,11 @@ local function new(options)
         clientScripts = options.client,
         player = options.player,
         clientRemotes = options.clientRemotes,
-        requireModule = options.requireModule or requireModule,
+        _requireModule = options.requireModule or requireModule,
         reporter = options.reporter or Reporter.default(),
-        services = options.services or ClientServices,
-    }, ClientModuleLoaderMetatable)
+        _services = options.services or ClientServices,
+        useNestedMode = options.useNestedMode or false,
+    }, ClientModuleLoaderMetatable) :: any
 end
 
-return {
-    new = new,
-}
+return ClientModuleLoader

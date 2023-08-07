@@ -1,23 +1,41 @@
 local FunctionMock = require('./FunctionMock')
+type FunctionMock = FunctionMock.FunctionMock
 
-local RemoteFunctionMock = {
-    ClassName = 'RemoteFunction',
+export type RemoteFunctionMock = RemoteFunction & {
+    OnClientEvent: ((...any) -> any)?,
+    OnServerEvent: ((...any) -> any)?,
+    mocks: {
+        InvokeClient: FunctionMock,
+        InvokeServer: FunctionMock,
+    },
 }
-local RemoteFunctionMockMetatable = { __index = RemoteFunctionMock }
+
+type RemoteFunctionMockStatic = RemoteFunctionMock & {
+    new: () -> RemoteFunctionMock,
+}
+
+local RemoteFunctionMock: RemoteFunctionMockStatic = {
+    ClassName = 'RemoteFunction',
+} :: any
+local RemoteFunctionMockMetatable = {
+    __index = RemoteFunctionMock,
+}
 
 function RemoteFunctionMock:InvokeClient(...)
+    local self = self :: RemoteFunctionMock
     return self.mocks.InvokeClient:call(...)
 end
 
 function RemoteFunctionMock:InvokeServer(...)
+    local self = self :: RemoteFunctionMock
     return self.mocks.InvokeServer:call(...)
 end
 
-function RemoteFunctionMock:IsA(className)
+function RemoteFunctionMock:IsA(className: string)
     return className == 'RemoteFunction'
 end
 
-local function new()
+function RemoteFunctionMock.new(): RemoteFunctionMock
     return setmetatable({
         Name = 'RemoteFunction',
         OnClientInvoke = nil,
@@ -26,9 +44,7 @@ local function new()
             InvokeClient = FunctionMock.new(),
             InvokeServer = FunctionMock.new(),
         },
-    }, RemoteFunctionMockMetatable)
+    }, RemoteFunctionMockMetatable) :: any
 end
 
-return {
-    new = new,
-}
+return RemoteFunctionMock

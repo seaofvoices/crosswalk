@@ -1,10 +1,12 @@
---!nonstrict
 return function()
     local ClientRemotes = require('./ClientRemotes')
 
     local Mocks = require('../Common/TestUtils/Mocks')
 
-    local remotesParent = nil
+    type InstanceMock = Instance & {
+        _children: { [string]: InstanceMock },
+    }
+    local remotesParent: InstanceMock
 
     local clientRemoteId = 'qwertty'
     local moduleName = 'SuperModule'
@@ -46,7 +48,7 @@ return function()
             WaitForChild = function(self, name)
                 return self._children[name]
             end,
-        }
+        } :: any
     end)
 
     describe('fireReadyRemote', function()
@@ -133,9 +135,10 @@ return function()
             getServerDataRemote.mocks.InvokeServer:setMockImplementation(function()
                 return setupData
             end)
-            remotesParent._children.Remotes._children[getServerDataRemoteName] = getServerDataRemote
+            remotesParent._children.Remotes._children[getServerDataRemoteName] =
+                getServerDataRemote :: any
             local clientRemoteEvent = Mocks.RemoteFunction.new()
-            remotesParent._children.Remotes._children[clientRemoteId] = clientRemoteEvent
+            remotesParent._children.Remotes._children[clientRemoteId] = clientRemoteEvent :: any
 
             local remotes = ClientRemotes.new({
                 remotesParent = remotesParent,

@@ -1,6 +1,7 @@
 local getSecurity = require('./getSecurity')
 local Services = require('./Services')
 local Reporter = require('../Common/Reporter')
+type Reporter = Reporter.Reporter
 local requireModule = require('../Common/requireModule')
 type CrosswalkModule = requireModule.CrosswalkModule
 local validateSharedModule = require('../Common/validateSharedModule')
@@ -29,7 +30,7 @@ type Private = {
     serverScripts: { ModuleScript },
     clientScripts: { ModuleScript },
     sharedScripts: { ModuleScript },
-    external: { [any]: any },
+    external: { [string]: any },
     _ranOnPlayerReady: { [Player]: true },
     shared: { [string]: any },
     _onlyShared: { CrosswalkModule },
@@ -75,9 +76,9 @@ export type NewModuleLoaderOptions = {
     server: { ModuleScript },
     client: { ModuleScript },
     shared: { ModuleScript },
-    external: { [any]: any }?,
+    external: { [string]: any }?,
     serverRemotes: ServerRemotes,
-    reporter: Reporter.Reporter?,
+    reporter: Reporter?,
     requireModule: <T...>(moduleScript: ModuleScript, T...) -> ()?,
     services: Services.Services?,
     useNestedMode: boolean?,

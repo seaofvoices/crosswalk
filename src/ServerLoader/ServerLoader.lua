@@ -39,7 +39,7 @@ export type ServerLoaderConfiguration = {
     sharedModules: { ModuleScript },
     serverModules: { ModuleScript },
     clientModules: { ModuleScript },
-    externalModules: { ModuleScript },
+    externalModules: { [string]: any },
     logLevel: Reporter.LogLevel?,
     reporter: Reporter.Reporter?,
     onKeyError: ((Player, string, string) -> ())?,
