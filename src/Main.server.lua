@@ -6,7 +6,7 @@ local ServerLoader = require('./ServerLoader')
 local function getModules(folder: Instance): { ModuleScript }
     local filtered = {}
 
-    for _, script in ipairs(folder:GetChildren()) do
+    for _, script in folder:GetChildren() do
         if script:IsA('ModuleScript') and not script.Name:match('.+%.spec$') then
             table.insert(filtered, script)
         end
