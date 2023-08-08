@@ -5,15 +5,11 @@ local roblox = require('@lune/roblox')
 local Async = require('./async')
 local FsHelpers = require('./fs-helpers')
 local PathUtils = require('./path-utils')
+local Darklua = require('./darklua')
 
 print('build crosswalk assets')
 
 local buildFolder = 'build'
-
-local function runDarklua(...: string): process.SpawnResult
-    local darkluaArgs = table.pack(...)
-    return process.spawn('darklua', darkluaArgs)
-end
 
 local function rojoBuild(configPath: string, output: string)
     local result = process.spawn('rojo', {
@@ -102,14 +98,13 @@ local function buildAsset(options: BuildAssetOptions)
         local darkluaConfigPath = PathUtils.join(tmpFolder, info.config)
 
         log('run darklua with config', info.config)
-        local darkluaResult =
-            runDarklua('process', '--config', darkluaConfigPath, srcFolder, srcFolder)
+        local darkluaResult = Darklua.process({
+            config = darkluaConfigPath,
+            input = srcFolder,
+        })
 
         log('darklua', darkluaResult.stdout)
         log('darklua stderr:', darkluaResult.stderr)
-        if not darkluaResult.ok then
-            error('failed to run darklua: ' .. darkluaResult.stderr)
-        end
 
         FsHelpers.createAllDirectories(info.container)
         local assetLocation = PathUtils.join(info.container, options.name .. '.rbxm')
@@ -128,49 +123,6 @@ end
 
 local testPlaceTemplate: roblox.DataModel = nil
 local testFolder = 'test-places'
-
-local duration = Async.runAllTask({
-    function()
-        buildAsset({
-            name = 'server-loader',
-            srcs = { 'Common', 'ServerLoader' },
-        })
-    end,
-    function()
-        buildAsset({
-            name = 'client-loader',
-            srcs = { 'Common', 'ClientLoader' },
-        })
-    end,
-    function()
-        buildAsset({
-            name = 'server-main',
-            rojoSourcemapConfig = 'test-place.project.json',
-            copyContent = { 'test-place', 'modules' },
-        })
-    end,
-    function()
-        buildAsset({
-            name = 'client-main',
-            rojoSourcemapConfig = 'test-place.project.json',
-            copyContent = { 'test-place', 'modules' },
-        })
-    end,
-    function()
-        local tmpPlace = PathUtils.join(buildFolder, 'tmp-place.rbxl')
-        print('create test place template', tmpPlace)
-        rojoBuild('rojo/test-model.project.json', tmpPlace)
-
-        testPlaceTemplate = roblox.deserializePlace(fs.readFile(tmpPlace))
-        print('  read and stored DataModel for test place file')
-
-        fs.removeFile(tmpPlace)
-    end,
-    function()
-        FsHelpers.clearDirectory(testFolder)
-        FsHelpers.createAllDirectories(testFolder)
-    end,
-})
 
 local function buildTestPlace(modelPath: string, testPlacePath: string)
     print('build test place', testPlacePath)
@@ -201,25 +153,102 @@ local function buildTestPlace(modelPath: string, testPlacePath: string)
     fs.writeFile(modelPath, roblox.serializeModel({ asset }))
 end
 
-do
-    local startGenerateTestPlace = os.clock()
-    buildTestPlace(
-        PathUtils.join(buildFolder, 'server-loader.rbxm'),
-        PathUtils.join(testFolder, 'server-loader.rbxl')
-    )
-    buildTestPlace(
-        PathUtils.join(buildFolder, 'debug', 'server-loader.rbxm'),
-        PathUtils.join(testFolder, 'server-loader-debug.rbxl')
-    )
-    buildTestPlace(
-        PathUtils.join(buildFolder, 'client-loader.rbxm'),
-        PathUtils.join(testFolder, 'client-loader.rbxl')
-    )
-    buildTestPlace(
-        PathUtils.join(buildFolder, 'debug', 'client-loader.rbxm'),
-        PathUtils.join(testFolder, 'client-loader-debug.rbxl')
-    )
-    duration += os.clock() - startGenerateTestPlace
-end
+local debugBundledFolder = PathUtils.join(buildFolder, 'debug', 'bundled')
+
+local duration = Async.runTree(Async.seq({
+    function()
+        FsHelpers.createAllDirectories(buildFolder)
+    end,
+    Async.parallel({
+        function()
+            local tmpPlace = PathUtils.join(buildFolder, 'tmp-place.rbxl')
+            print('create test place template', tmpPlace)
+            rojoBuild('rojo/test-model.project.json', tmpPlace)
+
+            testPlaceTemplate = roblox.deserializePlace(fs.readFile(tmpPlace))
+            print('  read and stored DataModel for test place file')
+
+            fs.removeFile(tmpPlace)
+        end,
+        function()
+            FsHelpers.clearDirectory(testFolder)
+            FsHelpers.createAllDirectories(testFolder)
+        end,
+        function()
+            buildAsset({
+                name = 'server-loader',
+                srcs = { 'Common', 'ServerLoader' },
+            })
+        end,
+        function()
+            buildAsset({
+                name = 'client-loader',
+                srcs = { 'Common', 'ClientLoader' },
+            })
+        end,
+        function()
+            buildAsset({
+                name = 'server-main',
+                rojoSourcemapConfig = 'test-place.project.json',
+                copyContent = { 'test-place', 'modules' },
+            })
+        end,
+        function()
+            buildAsset({
+                name = 'client-main',
+                rojoSourcemapConfig = 'test-place.project.json',
+                copyContent = { 'test-place', 'modules' },
+            })
+        end,
+        Async.seq({
+            function()
+                FsHelpers.createAllDirectories(debugBundledFolder)
+            end,
+            {
+                function()
+                    Darklua.process({
+                        config = 'scripts/darklua/bundle-debug.json5',
+                        input = 'src/ClientMain.client.lua',
+                        output = PathUtils.join(debugBundledFolder, 'ClientMain.client.lua'),
+                    })
+                end,
+                function()
+                    Darklua.process({
+                        config = 'scripts/darklua/bundle-debug.json5',
+                        input = 'src/Main.server.lua',
+                        output = PathUtils.join(debugBundledFolder, 'Main.server.lua'),
+                    })
+                end,
+            },
+        }),
+    }),
+    -- a bug in Lune prevents using parallel tasks for generating these assets
+    Async.seq({
+        function()
+            buildTestPlace(
+                PathUtils.join(buildFolder, 'server-loader.rbxm'),
+                PathUtils.join(testFolder, 'server-loader.rbxl')
+            )
+        end,
+        function()
+            buildTestPlace(
+                PathUtils.join(buildFolder, 'debug', 'server-loader.rbxm'),
+                PathUtils.join(testFolder, 'server-loader-debug.rbxl')
+            )
+        end,
+        function()
+            buildTestPlace(
+                PathUtils.join(buildFolder, 'client-loader.rbxm'),
+                PathUtils.join(testFolder, 'client-loader.rbxl')
+            )
+        end,
+        function()
+            buildTestPlace(
+                PathUtils.join(buildFolder, 'debug', 'client-loader.rbxm'),
+                PathUtils.join(testFolder, 'client-loader-debug.rbxl')
+            )
+        end,
+    }),
+}))
 
 print('\nRan all tasks in', string.format('%.1fs', duration))

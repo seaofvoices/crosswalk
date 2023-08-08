@@ -1,0 +1,25 @@
+{
+  generator: "dense",
+  bundle: {
+    require_mode: "path",
+  },
+  process: [
+    "remove_comments",
+    "remove_spaces",
+    {
+      rule: "inject_global_value",
+      identifier: "DEV",
+      value: false,
+    },
+    "compute_expression",
+    "remove_unused_if_branch",
+    "filter_after_early_return",
+    "convert_index_to_field",
+    "remove_nil_declaration",
+    "remove_unused_while",
+    "rename_variables",
+    "remove_empty_do",
+    "remove_method_definition",
+    "remove_function_call_parens",
+  ],
+}
