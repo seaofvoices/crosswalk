@@ -49,10 +49,10 @@ function ReporterBuilder:build(): Reporter.Reporter & HasEvents
         end
     end
     local reporter = Reporter.new({
-        onError = self.logError and getLevelLogger('error') or noop,
-        onWarn = self.logWarn and getLevelLogger('warn') or noop,
-        onInfo = self.logInfo and getLevelLogger('info') or noop,
-        onDebug = self.logDebug and getLevelLogger('debug') or noop,
+        onError = if self.logError then getLevelLogger('error') else noop,
+        onWarn = if self.logWarn then getLevelLogger('warn') else noop,
+        onInfo = if self.logInfo then getLevelLogger('info') else noop,
+        onDebug = if self.logDebug then getLevelLogger('debug') else noop,
     }) :: any
     reporter.events = events
     return reporter

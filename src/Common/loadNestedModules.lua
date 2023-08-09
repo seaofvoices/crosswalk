@@ -49,16 +49,16 @@ local function loadNestedModule(
 
     for _, subModule in children do
         if subModule:IsA('ModuleScript') then
-            local localServerModules = localModulesMap[subModule]
+            local localModules = localModulesMap[subModule]
 
             reporter:assert(
-                localServerModules ~= nil,
-                'expected to find server modules of %s',
+                localModules ~= nil,
+                'expected to find modules of `%s`',
                 subModule:GetFullName()
             )
 
             for name, module in parentModules do
-                localServerModules[name] = module
+                localModules[name] = module
             end
 
             local nestedModules = loadNestedModule(

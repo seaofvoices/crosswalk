@@ -153,18 +153,20 @@ function ClientModuleLoader:_loadSharedModules(): { CrosswalkModule }
             validateSharedModule(module, moduleName, self._reporter)
         end
 
-        localSharedModules[moduleName] = module
+        self._shared[moduleName] = module
         self._client[moduleName] = module
-
-        if self._useNestedMode then
-            self._shared[moduleName] = module
-        end
 
         table.insert(sharedModules, module)
     end
 
     if self._useNestedMode then
         for _, moduleScript in self._sharedScripts do
+            local localSharedModules = self._localModules[moduleScript]
+
+            for name, content in self._shared do
+                localSharedModules[name] = content
+            end
+
             local nestedModules = loadNestedModules(
                 moduleScript,
                 self._reporter,
@@ -247,15 +249,18 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
             module[name] = newFunction
         end
 
-        localClientModules[moduleName] = module
-        if self._useNestedMode then
-            self._client[moduleName] = module
-        end
+        self._client[moduleName] = module
         table.insert(clientModules, module)
     end
 
     if self._useNestedMode then
         for _, moduleScript in self._clientScripts do
+            local localClientModules = self._localModules[moduleScript]
+
+            for name, content in self._client do
+                localClientModules[name] = content
+            end
+
             local nestedModules = loadNestedModules(
                 moduleScript,
                 self._reporter,
