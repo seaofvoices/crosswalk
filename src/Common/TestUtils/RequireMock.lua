@@ -9,18 +9,20 @@ type ModuleOptions = {
     OnPlayerReady: boolean?,
     OnPlayerLeaving: boolean?,
 }
+type Event = { label: string, parameters: { [number]: any, n: number } }
 export type RequireMock = {
-    createModule: (self: RequireMock, name: string, options: ModuleOptions?) -> (),
+    createModule: (self: RequireMock, name: string, options: ModuleOptions?) -> ModuleScriptMock,
     getContent: (self: RequireMock, moduleScriptMock: ModuleScriptMock) -> any,
     getRequiredArgs: (self: RequireMock, moduleScriptMock: ModuleScriptMock) -> RequiredArgs,
     reset: (self: RequireMock) -> (),
     expectEventLabels: (self: RequireMock, expect: any, events: { string }) -> (),
+    getEvent: (self: RequireMock, index: number) -> Event,
 
     requireModule: (ModuleScript, ...any) -> any,
 }
 
 type Private = {
-    _callEvents: {},
+    _callEvents: { Event },
     _cache: {
         [ModuleScriptMock]: {
             content: any,
@@ -125,13 +127,24 @@ function RequireMock:expectEventLabels(expect: any, events: { string })
     end
 end
 
+function RequireMock:getEvent(index: number): Event
+    local self = self :: RequireMock & Private
+
+    local event = self._callEvents[index]
+    assert(
+        event ~= nil,
+        ('expected to find event at %d, but last is %d'):format(index, #self._callEvents)
+    )
+    return event
+end
+
 function RequireMock:_getEventLogger(label: string): (...any) -> ()
     local self = self :: RequireMock & Private
 
     return function(...)
         table.insert(self._callEvents, {
             label = label,
-            parameters = { ... },
+            parameters = table.pack(...),
         })
     end
 end

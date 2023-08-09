@@ -6,11 +6,14 @@ return function()
     local ReporterBuilder = require('../Common/TestUtils/ReporterBuilder')
     local createModuleScriptMock = require('../Common/TestUtils/createModuleScriptMock')
     type ModuleScriptMock = createModuleScriptMock.ModuleScriptMock
+    local RequireMock = require('../Common/TestUtils/RequireMock')
+    type RequiredArgs = RequireMock.RequiredArgs
 
-    local moduleMocks = {}
-    local function requireMock(moduleScript: ModuleScript): any
-        return moduleMocks[moduleScript]
-    end
+    local requireMock = RequireMock.new()
+
+    beforeEach(function()
+        requireMock:reset()
+    end)
 
     type EventMock = { moduleName: string, name: string, func: any, security: string }
     type ServerRemotesMock = ServerRemotes.ServerRemotes & {
@@ -58,49 +61,17 @@ return function()
             server = config.server or {},
             client = config.client or {},
             external = config.external or {},
-            requireModule = requireMock,
+            requireModule = requireMock.requireModule,
             serverRemotes = config.serverRemotes or createServerRemotesMock(),
             reporter = config.reporter,
             useNestedMode = config.useNestedMode,
         })
     end
 
-    local callEvents = {}
-
-    local function getEventLogger(label)
-        return function(...)
-            table.insert(callEvents, {
-                label = label,
-                parameters = { ... },
-            })
-        end
-    end
-
-    local MODULE_FUNCTIONS = { 'Init', 'Start', 'OnPlayerReady', 'OnPlayerLeaving' }
-
-    local function generateModule(
-        moduleName: string,
-        options: {
-            Init: boolean?,
-            Start: boolean?,
-            OnPlayerReady: boolean?,
-            OnPlayerLeaving: boolean?,
-        }?
-    )
-        local options: { [string]: true } = options or {}
-        local newModule = {}
-        for _, functionName in MODULE_FUNCTIONS do
-            if options[functionName] == nil or options[functionName] then
-                newModule[functionName] = getEventLogger(('%s-%s'):format(moduleName, functionName))
-            end
-        end
-        return newModule
-    end
-
-    beforeEach(function()
-        callEvents = {}
-        moduleMocks = {}
-    end)
+    local noPlayerFunctions = {
+        OnPlayerReady = false,
+        OnPlayerLeaving = false,
+    }
 
     describe('loadModules', function()
         local moduleA: ModuleScriptMock
@@ -108,21 +79,9 @@ return function()
         local moduleC: ModuleScriptMock
 
         beforeEach(function()
-            moduleA = createModuleScriptMock('A')
-            moduleB = createModuleScriptMock('B')
-            moduleC = createModuleScriptMock('C')
-
-            callEvents = {}
-            moduleMocks = {
-                [moduleA] = generateModule('A', {
-                    OnPlayerReady = false,
-                    OnPlayerLeaving = false,
-                }),
-                [moduleB] = generateModule('B', {
-                    OnPlayerReady = false,
-                    OnPlayerLeaving = false,
-                }),
-            }
+            moduleA = requireMock:createModule('A', noPlayerFunctions)
+            moduleB = requireMock:createModule('B', noPlayerFunctions)
+            moduleC = requireMock:createModule('C', noPlayerFunctions)
         end)
 
         it('throws if a shared module name is used twice', function()
@@ -258,7 +217,8 @@ return function()
                 local serverRemotesMock
                 beforeEach(function()
                     serverRemotesMock = createServerRemotesMock()
-                    moduleMocks[moduleA][concreteName] = function(arg): any
+                    local moduleAImpl = requireMock:getContent(moduleA)
+                    moduleAImpl[concreteName] = function(arg): any
                         if info.type == 'function' then
                             return true, 'ok:' .. arg
                         else
@@ -285,12 +245,14 @@ return function()
                     local event = expectedKind[1]
                     expect(event.moduleName).to.equal(moduleA.Name)
                     expect(event.name).to.equal(info.name)
-                    expect(event.func).to.equal(moduleMocks[moduleA][concreteName])
+                    local moduleAImpl = requireMock:getContent(moduleA)
+                    expect(event.func).to.equal(moduleAImpl[concreteName])
                     expect(event.security).to.equal(info.security)
                 end)
 
                 it('adds a function to call it from another server module', function()
-                    local callback = moduleMocks[moduleA][info.name]
+                    local moduleAImpl = requireMock:getContent(moduleA)
+                    local callback = moduleAImpl[info.name]
                     expect(callback).to.be.a('function')
                     if info.type == 'function' then
                         expect(callback('0')).to.equal('ok:0')
@@ -305,7 +267,8 @@ return function()
                 local reporterMock
                 beforeEach(function()
                     serverRemotesMock = createServerRemotesMock()
-                    moduleMocks[moduleA][concreteName] = function() end
+                    local moduleAImpl = requireMock:getContent(moduleA)
+                    moduleAImpl[concreteName] = function() end
                     reporterMock = ReporterBuilder.new():onlyWarn():build()
                     local moduleLoader = newModuleLoader({
                         shared = { moduleA },
@@ -347,16 +310,16 @@ return function()
                 end)
 
                 it('warns if a shared module has a `OnPlayerReady` function', function()
-                    moduleMocks[moduleC] = generateModule('C', { OnPlayerLeaving = false })
+                    local testModule = requireMock:createModule('test', { OnPlayerLeaving = false })
                     local moduleLoader = newModuleLoader({
-                        shared = { moduleC },
+                        shared = { testModule },
                         reporter = reporterMock,
                     })
                     moduleLoader:loadModules()
 
                     expect(#reporterMock.events).to.equal(1)
                     expect(reporterMock.events[1].message).to.equal(
-                        'shared module "C" has a `OnPlayerReady` function defined that will not be called automatically. '
+                        'shared module "test" has a `OnPlayerReady` function defined that will not be called automatically. '
                             .. 'This function should be removed or the logic should be moved into a server module or a '
                             .. 'client module.'
                     )
@@ -364,27 +327,24 @@ return function()
                 end)
 
                 it('warns if a shared module has a `OnPlayerLeaving` function', function()
-                    moduleMocks[moduleC] = generateModule('C', { OnPlayerReady = false })
+                    local testModule = requireMock:createModule('test', { OnPlayerReady = false })
                     local moduleLoader = newModuleLoader({
-                        shared = { moduleC },
+                        shared = { testModule },
                         reporter = reporterMock,
                     })
                     moduleLoader:loadModules()
 
                     expect(#reporterMock.events).to.equal(1)
                     expect(reporterMock.events[1].message).to.equal(
-                        'shared module "C" has a `OnPlayerLeaving` function defined that will not be called automatically. '
+                        'shared module "test" has a `OnPlayerLeaving` function defined that will not be called automatically. '
                             .. 'This function should be removed or the logic should be moved into a server module.'
                     )
                     expect(reporterMock.events[1].level).to.equal('warn')
                 end)
 
                 it('warns if a shared module has a `OnUnapprovedExecution` function', function()
-                    moduleMocks[moduleC] = generateModule('C', {
-                        OnPlayerReady = false,
-                        OnPlayerLeaving = false,
-                    })
-                    moduleMocks[moduleC].OnUnapprovedExecution = function() end
+                    local moduleCImpl = requireMock:getContent(moduleC)
+                    moduleCImpl.OnUnapprovedExecution = function() end
                     local moduleLoader = newModuleLoader({
                         shared = { moduleC },
                         reporter = reporterMock,
@@ -402,16 +362,14 @@ return function()
 
             describe('warn for bad usage', function()
                 local reporterMock
+                local moduleAImpl
                 beforeEach(function()
                     reporterMock = ReporterBuilder.new():onlyWarn():build()
-                    moduleMocks[moduleA] = generateModule('A', {
-                        OnPlayerReady = false,
-                        OnPlayerLeaving = false,
-                    })
+                    moduleAImpl = requireMock:getContent(moduleA)
                 end)
 
                 it('warns when an `_event` function returns more than one value', function()
-                    moduleMocks[moduleA].forgetValidation_event = function()
+                    moduleAImpl.forgetValidation_event = function()
                         return true, 'result'
                     end
                     local moduleLoader = newModuleLoader({
@@ -420,9 +378,9 @@ return function()
                     })
                     moduleLoader:loadModules()
 
-                    expect(moduleMocks[moduleA].forgetValidation).to.be.a('function')
+                    expect(moduleAImpl.forgetValidation).to.be.a('function')
 
-                    moduleMocks[moduleA].forgetValidation()
+                    moduleAImpl.forgetValidation()
 
                     expect(#reporterMock.events).to.equal(1)
                     expect(reporterMock.events[1].message).to.equal(
@@ -446,16 +404,16 @@ return function()
                     local functionName = 'forgetValidation' .. extension
 
                     it(('warns when a `%s` function returns nothing'):format(extension), function()
-                        moduleMocks[moduleA][functionName] = function() end
+                        moduleAImpl[functionName] = function() end
                         local moduleLoader = newModuleLoader({
                             server = { moduleA },
                             reporter = reporterMock,
                         })
                         moduleLoader:loadModules()
 
-                        expect(moduleMocks[moduleA].forgetValidation).to.be.a('function')
+                        expect(moduleAImpl.forgetValidation).to.be.a('function')
 
-                        moduleMocks[moduleA].forgetValidation()
+                        moduleAImpl.forgetValidation()
 
                         expect(#reporterMock.events).to.equal(1)
                         expect(reporterMock.events[1].message).to.equal(
@@ -471,7 +429,7 @@ return function()
                     it(
                         ('warns when a `%s` function does not return a boolean'):format(extension),
                         function()
-                            moduleMocks[moduleA][functionName] = function()
+                            moduleAImpl[functionName] = function()
                                 return 1
                             end
                             local moduleLoader = newModuleLoader({
@@ -480,9 +438,9 @@ return function()
                             })
                             moduleLoader:loadModules()
 
-                            expect(moduleMocks[moduleA].forgetValidation).to.be.a('function')
+                            expect(moduleAImpl.forgetValidation).to.be.a('function')
 
-                            moduleMocks[moduleA].forgetValidation()
+                            moduleAImpl.forgetValidation()
 
                             expect(#reporterMock.events).to.equal(1)
                             expect(reporterMock.events[1].message).to.equal(
@@ -497,7 +455,7 @@ return function()
                     )
 
                     it(('warns when a `%s` function does not succeed'):format(extension), function()
-                        moduleMocks[moduleA][functionName] = function()
+                        moduleAImpl[functionName] = function()
                             return false
                         end
                         local moduleLoader = newModuleLoader({
@@ -506,10 +464,10 @@ return function()
                         })
                         moduleLoader:loadModules()
 
-                        expect(moduleMocks[moduleA].forgetValidation).to.be.a('function')
+                        expect(moduleAImpl.forgetValidation).to.be.a('function')
 
                         local function callForgetValidation()
-                            moduleMocks[moduleA].forgetValidation()
+                            moduleAImpl.forgetValidation()
                         end
 
                         callForgetValidation()
@@ -536,11 +494,12 @@ return function()
             })
             moduleLoader:loadModules()
 
-            expect(#callEvents).to.equal(4)
-            expect(callEvents[1].label).to.equal('A-Init')
-            expect(callEvents[2].label).to.equal('B-Init')
-            expect(callEvents[3].label).to.equal('A-Start')
-            expect(callEvents[4].label).to.equal('B-Start')
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'B-Init',
+                'A-Start',
+                'B-Start',
+            })
         end)
 
         it("calls shared module's Init function first", function()
@@ -550,11 +509,12 @@ return function()
             })
             moduleLoader:loadModules()
 
-            expect(#callEvents).to.equal(4)
-            expect(callEvents[1].label).to.equal('A-Init')
-            expect(callEvents[2].label).to.equal('B-Init')
-            expect(callEvents[3].label).to.equal('A-Start')
-            expect(callEvents[4].label).to.equal('B-Start')
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'B-Init',
+                'A-Start',
+                'B-Start',
+            })
         end)
 
         it('errors if called twice', function()
@@ -570,26 +530,7 @@ return function()
             local moduleD: ModuleScriptMock
 
             beforeEach(function()
-                moduleD = createModuleScriptMock('D')
-                callEvents = {}
-                moduleMocks = {
-                    [moduleA] = generateModule('A', {
-                        OnPlayerReady = false,
-                        OnPlayerLeaving = false,
-                    }),
-                    [moduleB] = generateModule('B', {
-                        OnPlayerReady = false,
-                        OnPlayerLeaving = false,
-                    }),
-                    [moduleC] = generateModule('C', {
-                        OnPlayerReady = false,
-                        OnPlayerLeaving = false,
-                    }),
-                    [moduleD] = generateModule('D', {
-                        OnPlayerReady = false,
-                        OnPlayerLeaving = false,
-                    }),
-                }
+                moduleD = requireMock:createModule('D', noPlayerFunctions)
             end)
 
             for _, moduleKind in { 'server', 'shared' } do
@@ -603,14 +544,14 @@ return function()
                         } :: any)
                         moduleLoader:loadModules()
 
-                        expect(#callEvents).to.equal(6)
-
-                        expect(callEvents[1].label).to.equal('A-Init')
-                        expect(callEvents[2].label).to.equal('B-Init')
-                        expect(callEvents[3].label).to.equal('C-Init')
-                        expect(callEvents[4].label).to.equal('A-Start')
-                        expect(callEvents[5].label).to.equal('B-Start')
-                        expect(callEvents[6].label).to.equal('C-Start')
+                        requireMock:expectEventLabels(expect, {
+                            'A-Init',
+                            'B-Init',
+                            'C-Init',
+                            'A-Start',
+                            'B-Start',
+                            'C-Start',
+                        })
                     end)
 
                     it('loads a nested module in a nested module', function()
@@ -623,14 +564,14 @@ return function()
                         } :: any)
                         moduleLoader:loadModules()
 
-                        expect(#callEvents).to.equal(6)
-
-                        expect(callEvents[1].label).to.equal('A-Init')
-                        expect(callEvents[2].label).to.equal('B-Init')
-                        expect(callEvents[3].label).to.equal('C-Init')
-                        expect(callEvents[4].label).to.equal('A-Start')
-                        expect(callEvents[5].label).to.equal('B-Start')
-                        expect(callEvents[6].label).to.equal('C-Start')
+                        requireMock:expectEventLabels(expect, {
+                            'A-Init',
+                            'B-Init',
+                            'C-Init',
+                            'A-Start',
+                            'B-Start',
+                            'C-Start',
+                        })
                     end)
 
                     it('loads two nested modules', function()
@@ -643,16 +584,16 @@ return function()
                         } :: any)
                         moduleLoader:loadModules()
 
-                        expect(#callEvents).to.equal(8)
-
-                        expect(callEvents[1].label).to.equal('A-Init')
-                        expect(callEvents[2].label).to.equal('C-Init')
-                        expect(callEvents[3].label).to.equal('B-Init')
-                        expect(callEvents[4].label).to.equal('D-Init')
-                        expect(callEvents[5].label).to.equal('A-Start')
-                        expect(callEvents[6].label).to.equal('C-Start')
-                        expect(callEvents[7].label).to.equal('B-Start')
-                        expect(callEvents[8].label).to.equal('D-Start')
+                        requireMock:expectEventLabels(expect, {
+                            'A-Init',
+                            'C-Init',
+                            'B-Init',
+                            'D-Init',
+                            'A-Start',
+                            'C-Start',
+                            'B-Start',
+                            'D-Start',
+                        })
                     end)
                 end)
             end
@@ -668,16 +609,16 @@ return function()
                 })
                 moduleLoader:loadModules()
 
-                expect(#callEvents).to.equal(8)
-
-                expect(callEvents[1].label).to.equal('A-Init')
-                expect(callEvents[2].label).to.equal('B-Init')
-                expect(callEvents[3].label).to.equal('C-Init')
-                expect(callEvents[4].label).to.equal('D-Init')
-                expect(callEvents[5].label).to.equal('A-Start')
-                expect(callEvents[6].label).to.equal('B-Start')
-                expect(callEvents[7].label).to.equal('C-Start')
-                expect(callEvents[8].label).to.equal('D-Start')
+                requireMock:expectEventLabels(expect, {
+                    'A-Init',
+                    'B-Init',
+                    'C-Init',
+                    'D-Init',
+                    'A-Start',
+                    'B-Start',
+                    'C-Start',
+                    'D-Start',
+                })
             end)
         end)
     end)
@@ -700,13 +641,8 @@ return function()
         local moduleB: ModuleScriptMock
 
         beforeEach(function()
-            moduleA = createModuleScriptMock('A')
-            moduleB = createModuleScriptMock('B')
-            callEvents = {}
-            moduleMocks = {
-                [moduleA] = generateModule('A'),
-                [moduleB] = generateModule('B'),
-            }
+            moduleA = requireMock:createModule('A')
+            moduleB = requireMock:createModule('B')
         end)
 
         it('calls `OnPlayerReady` functions on server modules', function()
@@ -717,11 +653,15 @@ return function()
             local player = Mocks.Player.new()
             moduleLoader:onPlayerReady(player)
 
-            expect(#callEvents).to.equal(3)
-            local event = callEvents[3]
-            expect(event.label).to.equal('A-OnPlayerReady')
-            expect(#event.parameters).to.equal(1)
-            expect(event.parameters[1]).to.equal(player)
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'A-Start',
+                'A-OnPlayerReady',
+            })
+
+            local onPlayerReadyParameters = requireMock:getEvent(3).parameters
+            expect(onPlayerReadyParameters.n).to.equal(1)
+            expect(onPlayerReadyParameters[1]).to.equal(player)
         end)
 
         it('does not call `OnPlayerReady` on shared modules', function()
@@ -734,15 +674,17 @@ return function()
             local player = Mocks.Player.new()
             moduleLoader:onPlayerReady(player)
 
-            expect(#callEvents).to.equal(5)
-            expect(callEvents[1].label).to.equal('A-Init')
-            expect(callEvents[2].label).to.equal('B-Init')
-            expect(callEvents[3].label).to.equal('A-Start')
-            expect(callEvents[4].label).to.equal('B-Start')
-            local event = callEvents[5]
-            expect(event.label).to.equal('B-OnPlayerReady')
-            expect(#event.parameters).to.equal(1)
-            expect(event.parameters[1]).to.equal(player)
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'B-Init',
+                'A-Start',
+                'B-Start',
+                'B-OnPlayerReady',
+            })
+
+            local onPlayerReadyParameters = requireMock:getEvent(5).parameters
+            expect(onPlayerReadyParameters.n).to.equal(1)
+            expect(onPlayerReadyParameters[1]).to.equal(player)
         end)
     end)
 
@@ -751,14 +693,8 @@ return function()
         local moduleB: ModuleScriptMock
 
         beforeEach(function()
-            moduleA = createModuleScriptMock('A')
-            moduleB = createModuleScriptMock('B')
-
-            callEvents = {}
-            moduleMocks = {
-                [moduleA] = generateModule('A'),
-                [moduleB] = generateModule('B'),
-            }
+            moduleA = requireMock:createModule('A')
+            moduleB = requireMock:createModule('B')
         end)
 
         it('calls `OnPlayerLeaving` functions on server modules', function()
@@ -769,11 +705,15 @@ return function()
             local player = Mocks.Player.new()
             moduleLoader:onPlayerRemoving(player)
 
-            expect(#callEvents).to.equal(3)
-            local event = callEvents[3]
-            expect(event.label).to.equal('A-OnPlayerLeaving')
-            expect(#event.parameters).to.equal(1)
-            expect(event.parameters[1]).to.equal(player)
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'A-Start',
+                'A-OnPlayerLeaving',
+            })
+
+            local onPlayerLeavingParameters = requireMock:getEvent(3).parameters
+            expect(onPlayerLeavingParameters.n).to.equal(1)
+            expect(onPlayerLeavingParameters[1]).to.equal(player)
         end)
 
         it('does not call `OnPlayerLeaving` on shared modules', function()
@@ -786,15 +726,17 @@ return function()
             local player = Mocks.Player.new()
             moduleLoader:onPlayerRemoving(player)
 
-            expect(#callEvents).to.equal(5)
-            expect(callEvents[1].label).to.equal('A-Init')
-            expect(callEvents[2].label).to.equal('B-Init')
-            expect(callEvents[3].label).to.equal('A-Start')
-            expect(callEvents[4].label).to.equal('B-Start')
-            local event = callEvents[5]
-            expect(event.label).to.equal('B-OnPlayerLeaving')
-            expect(#event.parameters).to.equal(1)
-            expect(event.parameters[1]).to.equal(player)
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'B-Init',
+                'A-Start',
+                'B-Start',
+                'B-OnPlayerLeaving',
+            })
+
+            local onPlayerLeavingParameters = requireMock:getEvent(5).parameters
+            expect(onPlayerLeavingParameters.n).to.equal(1)
+            expect(onPlayerLeavingParameters[1]).to.equal(player)
         end)
 
         it('clears the remotes associated with the player', function()
