@@ -1,5 +1,6 @@
 return function()
     local ModuleLoader = require('./ModuleLoader')
+    type ModuleLoader = ModuleLoader.ModuleLoader
     local ServerRemotes = require('./ServerRemotes')
 
     local Mocks = require('../Common/TestUtils/Mocks')
@@ -8,6 +9,9 @@ return function()
     type ModuleScriptMock = createModuleScriptMock.ModuleScriptMock
     local RequireMock = require('../Common/TestUtils/RequireMock')
     type RequiredArgs = RequireMock.RequiredArgs
+    local createServerRemotesMock = require('../Common/TestUtils/createServerRemotesMock')
+    type RemoteEventMock = createServerRemotesMock.RemoteEventMock
+    local createModuleLoaderTests = require('../Common/TestUtils/createModuleLoaderTests')
 
     local requireMock = RequireMock.new()
 
@@ -15,37 +19,8 @@ return function()
         requireMock:reset()
     end)
 
-    type EventMock = { moduleName: string, name: string, func: any, security: string }
-    type ServerRemotesMock = ServerRemotes.ServerRemotes & {
-        events: { EventMock },
-        functions: { EventMock },
-        clearPlayer: Mocks.FunctionMock,
-    }
-    local function createServerRemotesMock(): ServerRemotesMock
-        return {
-            events = {},
-            functions = {},
-            addEventToServer = function(self, moduleName, name, func, security)
-                table.insert(self.events, {
-                    moduleName = moduleName,
-                    name = name,
-                    func = func,
-                    security = security,
-                })
-            end,
-            addFunctionToServer = function(self, moduleName, name, func, security)
-                table.insert(self.functions, {
-                    moduleName = moduleName,
-                    name = name,
-                    func = func,
-                    security = security,
-                })
-            end,
-            clearPlayer = Mocks.Function.new(),
-        } :: any
-    end
-
     type NewModuleLoaderConfig = {
+        requireModule: ((ModuleScript, ...any) -> any)?,
         shared: { ModuleScript }?,
         server: { ModuleScript }?,
         client: { ModuleScript }?,
@@ -54,14 +29,14 @@ return function()
         reporter: ReporterBuilder.Reporter?,
         useNestedMode: boolean?,
     }
-    local function newModuleLoader(config: NewModuleLoaderConfig?)
+    local function newModuleLoader(config: NewModuleLoaderConfig?): ModuleLoader
         local config: NewModuleLoaderConfig = config or {}
         return ModuleLoader.new({
             shared = config.shared or {},
             server = config.server or {},
             client = config.client or {},
             external = config.external or {},
-            requireModule = requireMock.requireModule,
+            requireModule = config.requireModule or requireMock.requireModule,
             serverRemotes = config.serverRemotes or createServerRemotesMock(),
             reporter = config.reporter,
             useNestedMode = config.useNestedMode,
@@ -72,6 +47,19 @@ return function()
         OnPlayerReady = false,
         OnPlayerLeaving = false,
     }
+
+    describe(
+        'common',
+        createModuleLoaderTests('server', function(config)
+            return newModuleLoader({
+                requireModule = config.requireModule,
+                server = config.self,
+                shared = config.shared,
+                reporter = config.reporter,
+                useNestedMode = config.useNestedMode,
+            })
+        end)
+    )
 
     describe('loadModules', function()
         local moduleA: ModuleScriptMock
@@ -233,7 +221,8 @@ return function()
                 end)
 
                 it(('adds a %s to server'):format(info.type), function()
-                    local expectedKind: { EventMock } = if info.type == 'event'
+                    local expectedKind: { RemoteEventMock } = if info.type
+                            == 'event'
                         then serverRemotesMock.events
                         else serverRemotesMock.functions
                     local otherKind = if info.type == 'event'
@@ -524,102 +513,6 @@ return function()
             expect(function()
                 moduleLoader:loadModules()
             end).to.throw()
-        end)
-
-        describe('use nested mode', function()
-            local moduleD: ModuleScriptMock
-
-            beforeEach(function()
-                moduleD = requireMock:createModule('D', noPlayerFunctions)
-            end)
-
-            for _, moduleKind in { 'server', 'shared' } do
-                describe(('with %s modules'):format(moduleKind), function()
-                    it('loads a nested module', function()
-                        moduleB.GetChildren:returnSameValue({ moduleC })
-
-                        local moduleLoader = newModuleLoader({
-                            [moduleKind] = { moduleA, moduleB },
-                            useNestedMode = true,
-                        } :: any)
-                        moduleLoader:loadModules()
-
-                        requireMock:expectEventLabels(expect, {
-                            'A-Init',
-                            'B-Init',
-                            'C-Init',
-                            'A-Start',
-                            'B-Start',
-                            'C-Start',
-                        })
-                    end)
-
-                    it('loads a nested module in a nested module', function()
-                        moduleA.GetChildren:returnSameValue({ moduleB })
-                        moduleB.GetChildren:returnSameValue({ moduleC })
-
-                        local moduleLoader = newModuleLoader({
-                            [moduleKind] = { moduleA },
-                            useNestedMode = true,
-                        } :: any)
-                        moduleLoader:loadModules()
-
-                        requireMock:expectEventLabels(expect, {
-                            'A-Init',
-                            'B-Init',
-                            'C-Init',
-                            'A-Start',
-                            'B-Start',
-                            'C-Start',
-                        })
-                    end)
-
-                    it('loads two nested modules', function()
-                        moduleA.GetChildren:returnSameValue({ moduleB })
-                        moduleC.GetChildren:returnSameValue({ moduleD })
-
-                        local moduleLoader = newModuleLoader({
-                            [moduleKind] = { moduleA, moduleC },
-                            useNestedMode = true,
-                        } :: any)
-                        moduleLoader:loadModules()
-
-                        requireMock:expectEventLabels(expect, {
-                            'A-Init',
-                            'C-Init',
-                            'B-Init',
-                            'D-Init',
-                            'A-Start',
-                            'C-Start',
-                            'B-Start',
-                            'D-Start',
-                        })
-                    end)
-                end)
-            end
-
-            it('calls `Init` function on nested shared modules before server modules', function()
-                moduleA.GetChildren:returnSameValue({ moduleB })
-                moduleC.GetChildren:returnSameValue({ moduleD })
-
-                local moduleLoader = newModuleLoader({
-                    shared = { moduleA },
-                    server = { moduleC },
-                    useNestedMode = true,
-                })
-                moduleLoader:loadModules()
-
-                requireMock:expectEventLabels(expect, {
-                    'A-Init',
-                    'B-Init',
-                    'C-Init',
-                    'D-Init',
-                    'A-Start',
-                    'B-Start',
-                    'C-Start',
-                    'D-Start',
-                })
-            end)
         end)
     end)
 

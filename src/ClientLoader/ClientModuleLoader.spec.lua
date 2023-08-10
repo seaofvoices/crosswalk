@@ -9,6 +9,8 @@ return function()
     type ModuleScriptMock = createModuleScriptMock.ModuleScriptMock
     local RequireMock = require('../Common/TestUtils/RequireMock')
     type RequiredArgs = RequireMock.RequiredArgs
+    local createClientRemotesMock = require('../Common/TestUtils/createClientRemotesMock')
+    local createModuleLoaderTests = require('../Common/TestUtils/createModuleLoaderTests')
 
     local requireMock = RequireMock.new()
 
@@ -16,29 +18,8 @@ return function()
         requireMock:reset()
     end)
 
-    local function createClientRemotesMock(): ClientRemotes
-        return {
-            _remotes = {},
-            _serverModules = {},
-            getServerModules = function(self)
-                return self._serverModules
-            end,
-            listen = Mocks.Function.new(),
-            disconnect = Mocks.Function.new(),
-            connectRemote = function(self, module, functionName, callback)
-                if self._remotes[module] == nil then
-                    self._remotes[module] = {
-                        [functionName] = callback,
-                    }
-                else
-                    self._remotes[module][functionName] = callback
-                end
-            end,
-            fireReadyRemote = Mocks.Function.new(),
-        } :: any
-    end
-
     type NewModuleLoaderConfig = {
+        requireModule: ((ModuleScript, ...any) -> any)?,
         shared: { ModuleScript }?,
         client: { ModuleScript }?,
         external: { [string]: any }?,
@@ -55,7 +36,7 @@ return function()
             client = config.client or {},
             external = config.external or {},
             player = config.player or Mocks.Player.new(),
-            requireModule = requireMock.requireModule,
+            requireModule = config.requireModule or requireMock.requireModule,
             clientRemotes = config.clientRemotes or createClientRemotesMock(),
             reporter = config.reporter,
             useNestedMode = config.useNestedMode,
@@ -67,6 +48,20 @@ return function()
         OnPlayerReady = false,
         OnPlayerLeaving = false,
     }
+
+    describe(
+        'common',
+        createModuleLoaderTests('client', function(config)
+            return newModuleLoader({
+                requireModule = config.requireModule,
+                client = config.self,
+                shared = config.shared,
+                reporter = config.reporter,
+                useNestedMode = config.useNestedMode,
+            })
+        end)
+    )
+
     describe('loadModules', function()
         local moduleA: ModuleScriptMock
         local moduleB: ModuleScriptMock
@@ -375,102 +370,6 @@ return function()
             expect(function()
                 moduleLoader:loadModules()
             end).to.throw()
-        end)
-
-        describe('use nested mode', function()
-            local moduleD: ModuleScriptMock
-
-            beforeEach(function()
-                moduleD = requireMock:createModule('D', noPlayerFunctions)
-            end)
-
-            for _, moduleKind in { 'client', 'shared' } do
-                describe(('with %s modules'):format(moduleKind), function()
-                    it('loads a nested module', function()
-                        moduleB.GetChildren:returnSameValue({ moduleC })
-
-                        local moduleLoader = newModuleLoader({
-                            client = { moduleA, moduleB },
-                            useNestedMode = true,
-                        } :: any)
-                        moduleLoader:loadModules()
-
-                        requireMock:expectEventLabels(expect, {
-                            'A-Init',
-                            'B-Init',
-                            'C-Init',
-                            'A-Start',
-                            'B-Start',
-                            'C-Start',
-                        })
-                    end)
-
-                    it('loads a nested module in a nested module', function()
-                        moduleA.GetChildren:returnSameValue({ moduleB })
-                        moduleB.GetChildren:returnSameValue({ moduleC })
-
-                        local moduleLoader = newModuleLoader({
-                            [moduleKind] = { moduleA },
-                            useNestedMode = true,
-                        } :: any)
-                        moduleLoader:loadModules()
-
-                        requireMock:expectEventLabels(expect, {
-                            'A-Init',
-                            'B-Init',
-                            'C-Init',
-                            'A-Start',
-                            'B-Start',
-                            'C-Start',
-                        })
-                    end)
-
-                    it('loads two nested modules', function()
-                        moduleA.GetChildren:returnSameValue({ moduleB })
-                        moduleC.GetChildren:returnSameValue({ moduleD })
-
-                        local moduleLoader = newModuleLoader({
-                            [moduleKind] = { moduleA, moduleC },
-                            useNestedMode = true,
-                        } :: any)
-                        moduleLoader:loadModules()
-
-                        requireMock:expectEventLabels(expect, {
-                            'A-Init',
-                            'C-Init',
-                            'B-Init',
-                            'D-Init',
-                            'A-Start',
-                            'C-Start',
-                            'B-Start',
-                            'D-Start',
-                        })
-                    end)
-                end)
-            end
-
-            it('calls `Init` function on nested shared modules before client modules', function()
-                moduleA.GetChildren:returnSameValue({ moduleB })
-                moduleC.GetChildren:returnSameValue({ moduleD })
-
-                local moduleLoader = newModuleLoader({
-                    shared = { moduleA },
-                    client = { moduleC },
-                    useNestedMode = true,
-                })
-                moduleLoader:loadModules()
-
-                requireMock:expectEventLabels(expect, {
-                    'A-Init',
-                    'B-Init',
-                    'C-Init',
-                    'D-Init',
-                    'A-Start',
-                    'B-Start',
-                    'C-Start',
-                    'D-Start',
-                })
-            end)
         end)
     end)
 end
