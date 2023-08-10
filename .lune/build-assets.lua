@@ -222,8 +222,7 @@ local duration = Async.runTree(Async.seq({
             },
         }),
     }),
-    -- a bug in Lune prevents using parallel tasks for generating these assets
-    Async.seq({
+    {
         function()
             buildTestPlace(
                 PathUtils.join(buildFolder, 'server-loader.rbxm'),
@@ -248,7 +247,7 @@ local duration = Async.runTree(Async.seq({
                 PathUtils.join(testFolder, 'client-loader-debug.rbxl')
             )
         end,
-    }),
+    },
 }))
 
 print('\nRan all tasks in', string.format('%.1fs', duration))

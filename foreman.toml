@@ -4,5 +4,5 @@ run-in-roblox = { github = "rojo-rbx/run-in-roblox", version = "0.3.0" }
 selene = { github = "Kampfkarren/selene", version = "=0.25.0" }
 stylua = { github = "JohnnyMorganz/styLua", version = "=0.18.1" }
 darklua = { github = "seaofvoices/darklua", version = "=0.10.2" }
-lune = { source = "filiptibell/lune", version = "=0.7.5"}
+lune = { source = "filiptibell/lune", version = "=0.7.6"}
 luau-lsp = { github = "JohnnyMorganz/luau-lsp", version = "=1.22.1" }
