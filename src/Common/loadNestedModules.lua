@@ -66,7 +66,8 @@ local function loadNestedModule(
                 reporter,
                 customRequireModule,
                 localModulesMap,
-                verifyName
+                verifyName,
+                ...
             )
 
             table.move(nestedModules, 1, #nestedModules, #loadedModules + 1, loadedModules)

@@ -11,6 +11,7 @@ type NewModuleLoaderConfig = {
     self: { ModuleScript }?,
     reporter: Reporter?,
     useNestedMode: boolean?,
+    services: any,
 }
 type ModuleLoaderLike = { loadModules: (self: any) -> () }
 
@@ -28,6 +29,7 @@ local function createModuleLoaderTests(
             self: { ModuleScript }?,
             reporter: Reporter?,
             useNestedMode: boolean?,
+            services: any,
         })
             return loader({
                 shared = config.shared,
@@ -35,6 +37,7 @@ local function createModuleLoaderTests(
                 reporter = config.reporter,
                 useNestedMode = config.useNestedMode,
                 requireModule = requireMock.requireModule,
+                services = config.services,
             })
         end
 
@@ -47,19 +50,19 @@ local function createModuleLoaderTests(
             OnPlayerLeaving = false,
         }
 
+        local moduleA: ModuleScriptMock
+        local moduleB: ModuleScriptMock
+        local moduleC: ModuleScriptMock
+        local moduleD: ModuleScriptMock
+
+        beforeEach(function()
+            moduleA = requireMock:createModule('A', noPlayerFunctions)
+            moduleB = requireMock:createModule('B', noPlayerFunctions)
+            moduleC = requireMock:createModule('C', noPlayerFunctions)
+            moduleD = requireMock:createModule('D', noPlayerFunctions)
+        end)
+
         describe('use nested mode', function()
-            local moduleA: ModuleScriptMock
-            local moduleB: ModuleScriptMock
-            local moduleC: ModuleScriptMock
-            local moduleD: ModuleScriptMock
-
-            beforeEach(function()
-                moduleA = requireMock:createModule('A', noPlayerFunctions)
-                moduleB = requireMock:createModule('B', noPlayerFunctions)
-                moduleC = requireMock:createModule('C', noPlayerFunctions)
-                moduleD = requireMock:createModule('D', noPlayerFunctions)
-            end)
-
             for _, moduleKind in { 'self', 'shared' } do
                 describe(
                     ('with %s modules'):format(if moduleKind == 'self' then kind else moduleKind),
@@ -124,6 +127,29 @@ local function createModuleLoaderTests(
                                 'D-Start',
                             })
                         end)
+
+                        it('loads a deeply nested module', function()
+                            moduleA.GetChildren:returnSameValue({ moduleB })
+                            moduleB.GetChildren:returnSameValue({ moduleC })
+                            moduleC.GetChildren:returnSameValue({ moduleD })
+
+                            local moduleLoader = createModuleLoader({
+                                [moduleKind] = { moduleA } :: any,
+                                useNestedMode = true,
+                            })
+                            moduleLoader:loadModules()
+
+                            requireMock:expectEventLabels(expect, {
+                                'A-Init',
+                                'B-Init',
+                                'C-Init',
+                                'D-Init',
+                                'A-Start',
+                                'B-Start',
+                                'C-Start',
+                                'D-Start',
+                            })
+                        end)
                     end
                 )
             end
@@ -154,6 +180,243 @@ local function createModuleLoaderTests(
                 end
             )
         end)
+
+        for _, useNestedMode in { false, true } do
+            local describeName = 'modules signature'
+                .. if useNestedMode then ' (nested mode)' else ''
+
+            describe(describeName, function()
+                local moduleA2: ModuleScriptMock
+                local moduleB2: ModuleScriptMock
+                local moduleB3: ModuleScriptMock
+                local moduleC2: ModuleScriptMock
+                local moduleD2: ModuleScriptMock
+                local moduleD3: ModuleScriptMock
+
+                local aLoadedWith: RequiredArgs
+                local a2LoadedWith: RequiredArgs
+                local bLoadedWith: RequiredArgs
+                local b2LoadedWith: RequiredArgs
+                local b3LoadedWith: RequiredArgs
+                local cLoadedWith: RequiredArgs
+                local c2LoadedWith: RequiredArgs
+                local dLoadedWith: RequiredArgs
+                local d2LoadedWith: RequiredArgs
+                local d3LoadedWith: RequiredArgs
+
+                local servicesMock
+
+                beforeEach(function()
+                    if useNestedMode then
+                        moduleA2 = requireMock:createModule('A2', noPlayerFunctions)
+                        moduleB2 = requireMock:createModule('B2', noPlayerFunctions)
+                        moduleB3 = requireMock:createModule('B3', noPlayerFunctions)
+                        moduleC2 = requireMock:createModule('C2', noPlayerFunctions)
+                        moduleD2 = requireMock:createModule('D2', noPlayerFunctions)
+                        moduleD3 = requireMock:createModule('D3', noPlayerFunctions)
+
+                        moduleA.GetChildren:returnSameValue({ moduleA2 })
+                        moduleB.GetChildren:returnSameValue({ moduleB2 })
+                        moduleB2.GetChildren:returnSameValue({ moduleB3 })
+                        moduleC.GetChildren:returnSameValue({ moduleC2 })
+                        moduleD.GetChildren:returnSameValue({ moduleD2 })
+                        moduleD2.GetChildren:returnSameValue({ moduleD3 })
+                    end
+
+                    servicesMock = {}
+                    local moduleLoader = createModuleLoader({
+                        shared = { moduleA, moduleB },
+                        self = { moduleC, moduleD },
+                        services = servicesMock,
+                        useNestedMode = useNestedMode,
+                    })
+                    moduleLoader:loadModules()
+
+                    aLoadedWith = requireMock:getRequiredArgs(moduleA)
+                    bLoadedWith = requireMock:getRequiredArgs(moduleB)
+                    cLoadedWith = requireMock:getRequiredArgs(moduleC)
+                    dLoadedWith = requireMock:getRequiredArgs(moduleD)
+
+                    if useNestedMode then
+                        a2LoadedWith = requireMock:getRequiredArgs(moduleA2)
+                        b2LoadedWith = requireMock:getRequiredArgs(moduleB2)
+                        b3LoadedWith = requireMock:getRequiredArgs(moduleB3)
+                        c2LoadedWith = requireMock:getRequiredArgs(moduleC2)
+                        d2LoadedWith = requireMock:getRequiredArgs(moduleD2)
+                        d3LoadedWith = requireMock:getRequiredArgs(moduleD2)
+
+                        expect(b2LoadedWith.n).to.equal(3)
+                        expect(b3LoadedWith.n).to.equal(3)
+                        expect(c2LoadedWith.n).to.equal(3)
+                        expect(d2LoadedWith.n).to.equal(3)
+                        expect(d3LoadedWith.n).to.equal(3)
+                    end
+
+                    expect(aLoadedWith.n).to.equal(3)
+                    expect(bLoadedWith.n).to.equal(3)
+                    expect(cLoadedWith.n).to.equal(3)
+                    expect(dLoadedWith.n).to.equal(3)
+                end)
+
+                if useNestedMode then
+                    it('loads shared modules with nested module', function()
+                        local aModules = aLoadedWith[1]
+                        expect(aModules.A2).to.equal(requireMock:getContent(moduleA2))
+
+                        local bModules = bLoadedWith[1]
+                        expect(bModules.B2).to.equal(requireMock:getContent(moduleB2))
+
+                        local b2Modules = b2LoadedWith[1]
+                        expect(b2Modules.B3).to.equal(requireMock:getContent(moduleB3))
+                    end)
+
+                    it('loads nested shared modules with its parent module', function()
+                        local a2Modules = a2LoadedWith[1]
+                        expect(a2Modules.A).to.equal(requireMock:getContent(moduleA))
+
+                        local b2Modules = b2LoadedWith[1]
+                        expect(b2Modules.B).to.equal(requireMock:getContent(moduleB))
+
+                        local b3Modules = b3LoadedWith[1]
+                        expect(b3Modules.B).to.equal(requireMock:getContent(moduleB))
+                        expect(b3Modules.B2).to.equal(requireMock:getContent(moduleB2))
+                    end)
+
+                    it("loads nested shared modules with its parent's siblings", function()
+                        local a2Modules = a2LoadedWith[1]
+                        expect(a2Modules.B).to.equal(requireMock:getContent(moduleB))
+
+                        local b2Modules = b2LoadedWith[1]
+                        expect(b2Modules.A).to.equal(requireMock:getContent(moduleA))
+
+                        local b3Modules = b3LoadedWith[1]
+                        expect(b3Modules.A).to.equal(requireMock:getContent(moduleA))
+                    end)
+
+                    it(
+                        "loads nested shared modules without its parent's siblings children",
+                        function()
+                            local a2Modules = a2LoadedWith[1]
+                            expect(a2Modules.B2).to.equal(nil)
+                            expect(a2Modules.B3).to.equal(nil)
+
+                            local b2Modules = b2LoadedWith[1]
+                            expect(b2Modules.A2).to.equal(nil)
+                        end
+                    )
+
+                    it(('loads %s modules with nested module'):format(kind), function()
+                        local cModules = cLoadedWith[1]
+                        expect(cModules.C2).to.equal(requireMock:getContent(moduleC2))
+
+                        local dModules = dLoadedWith[1]
+                        expect(dModules.D2).to.equal(requireMock:getContent(moduleD2))
+
+                        local d2Modules = d2LoadedWith[1]
+                        expect(d2Modules.D3).to.equal(requireMock:getContent(moduleD3))
+                    end)
+
+                    it(('loads nested %s modules with its parent module'):format(kind), function()
+                        local c2Modules = c2LoadedWith[1]
+                        expect(c2Modules.C).to.equal(requireMock:getContent(moduleC))
+
+                        local d2Modules = d2LoadedWith[1]
+                        expect(d2Modules.D).to.equal(requireMock:getContent(moduleD))
+
+                        local d3Modules = d3LoadedWith[1]
+                        expect(d3Modules.D).to.equal(requireMock:getContent(moduleD))
+                        expect(d3Modules.D2).to.equal(requireMock:getContent(moduleD2))
+                    end)
+
+                    it(
+                        ("loads nested %s modules with its parent's siblings"):format(kind),
+                        function()
+                            local c2Modules = c2LoadedWith[1]
+                            expect(c2Modules.D).to.equal(requireMock:getContent(moduleD))
+
+                            local d2Modules = d2LoadedWith[1]
+                            expect(d2Modules.C).to.equal(requireMock:getContent(moduleC))
+
+                            local d3Modules = d3LoadedWith[1]
+                            expect(d3Modules.C).to.equal(requireMock:getContent(moduleC))
+                        end
+                    )
+
+                    it(
+                        ("loads nested %s modules without its parent's siblings children"):format(
+                            kind
+                        ),
+                        function()
+                            local c2Modules = c2LoadedWith[1]
+                            expect(c2Modules.D2).to.equal(nil)
+                            expect(c2Modules.D3).to.equal(nil)
+
+                            local d2Modules = d2LoadedWith[1]
+                            expect(d2Modules.C2).to.equal(nil)
+                        end
+                    )
+                end
+
+                it('loads shared modules with other shared modules', function()
+                    local aModules = aLoadedWith[1]
+                    expect(aModules.A).to.equal(requireMock:getContent(moduleA))
+                    expect(aModules.B).to.equal(requireMock:getContent(moduleB))
+
+                    local bModules = bLoadedWith[1]
+                    expect(bModules.A).to.equal(requireMock:getContent(moduleA))
+                    expect(bModules.B).to.equal(requireMock:getContent(moduleB))
+                end)
+
+                it('loads shared modules with `Services` utility', function()
+                    local aServices = aLoadedWith[2]
+                    local bServices = bLoadedWith[2]
+
+                    expect(aServices).to.equal(servicesMock)
+                    expect(bServices).to.equal(servicesMock)
+                end)
+
+                it(('loads %s module with `Services` utility'):format(kind), function()
+                    local cServices = cLoadedWith[3]
+
+                    expect(cServices).to.equal(servicesMock)
+                end)
+
+                local isServer = kind == 'server'
+                it(
+                    ('loads shared modules with `isServer` boolean to %s'):format(
+                        tostring(isServer)
+                    ),
+                    function()
+                        local aIsServer = aLoadedWith[3]
+                        local bIsServer = bLoadedWith[3]
+
+                        expect(aIsServer).to.equal(isServer)
+                        expect(bIsServer).to.equal(isServer)
+                    end
+                )
+
+                it('loads client modules with shared modules', function()
+                    local cModules = cLoadedWith[1]
+                    expect(cModules.A).to.equal(requireMock:getContent(moduleA))
+                    expect(cModules.B).to.equal(requireMock:getContent(moduleB))
+
+                    local dModules = dLoadedWith[1]
+                    expect(dModules.A).to.equal(requireMock:getContent(moduleA))
+                    expect(dModules.B).to.equal(requireMock:getContent(moduleB))
+                end)
+
+                it(('loads %s module with other %s modules'):format(kind, kind), function()
+                    local cModules = cLoadedWith[1]
+
+                    expect(cModules.C).to.equal(requireMock:getContent(moduleC))
+                    expect(cModules.D).to.equal(requireMock:getContent(moduleD))
+
+                    local dModules = dLoadedWith[1]
+                    expect(dModules.C).to.equal(requireMock:getContent(moduleC))
+                    expect(dModules.D).to.equal(requireMock:getContent(moduleD))
+                end)
+            end)
+        end
     end
 end
 

@@ -28,6 +28,7 @@ return function()
         serverRemotes: ServerRemotes.ServerRemotes?,
         reporter: ReporterBuilder.Reporter?,
         useNestedMode: boolean?,
+        services: any,
     }
     local function newModuleLoader(config: NewModuleLoaderConfig?): ModuleLoader
         local config: NewModuleLoaderConfig = config or {}
@@ -40,6 +41,7 @@ return function()
             serverRemotes = config.serverRemotes or createServerRemotesMock(),
             reporter = config.reporter,
             useNestedMode = config.useNestedMode,
+            services = config.services,
         })
     end
 
@@ -57,6 +59,7 @@ return function()
                 shared = config.shared,
                 reporter = config.reporter,
                 useNestedMode = config.useNestedMode,
+                services = config.services,
             })
         end)
     )
