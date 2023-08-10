@@ -2,3 +2,4 @@ std = "selene_defs"
 
 [rules]
 global_usage = "allow"
+shadowing = "allow"

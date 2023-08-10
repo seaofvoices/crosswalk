@@ -212,7 +212,11 @@ function ModuleLoader:_verifySharedModuleName(moduleName: string, localModules: 
         moduleName
     )
     self._reporter:assert(
-        self.shared[moduleName] == nil,
+        self.shared[moduleName] == nil and localModules[moduleName] == nil,
+        'shared module named %q was already registered as a shared module',
+        moduleName
+    )
+    self._reporter:assert(
         'shared module named %q was already registered as a shared module',
         moduleName
     )
@@ -228,12 +232,7 @@ function ModuleLoader:_verifyServerModuleName(moduleName: string, localModules: 
         moduleName
     )
     self._reporter:assert(
-        self.shared[moduleName] == nil,
-        'server module named %q was already registered as a shared module',
-        moduleName
-    )
-    self._reporter:assert(
-        localModules[moduleName] == nil,
+        self.shared[moduleName] == nil and localModules[moduleName] == nil,
         'server module named %q was already registered as a server module',
         moduleName
     )
