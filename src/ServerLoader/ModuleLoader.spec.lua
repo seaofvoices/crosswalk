@@ -27,7 +27,7 @@ return function()
         external: { [any]: any }?,
         serverRemotes: ServerRemotes.ServerRemotes?,
         reporter: ReporterBuilder.Reporter?,
-        useNestedMode: boolean?,
+        useRecursiveMode: boolean?,
         services: any,
     }
     local function newModuleLoader(config: NewModuleLoaderConfig?): ModuleLoader
@@ -40,7 +40,7 @@ return function()
             requireModule = config.requireModule or requireMock.requireModule,
             serverRemotes = config.serverRemotes or createServerRemotesMock(),
             reporter = config.reporter,
-            useNestedMode = config.useNestedMode,
+            useRecursiveMode = config.useRecursiveMode,
             services = config.services,
         })
     end
@@ -58,7 +58,7 @@ return function()
                 server = config.self,
                 shared = config.shared,
                 reporter = config.reporter,
-                useNestedMode = config.useNestedMode,
+                useRecursiveMode = config.useRecursiveMode,
                 services = config.services,
             })
         end)

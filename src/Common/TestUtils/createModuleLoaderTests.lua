@@ -10,7 +10,7 @@ type NewModuleLoaderConfig = {
     shared: { ModuleScript }?,
     self: { ModuleScript }?,
     reporter: Reporter?,
-    useNestedMode: boolean?,
+    useRecursiveMode: boolean?,
     services: any,
 }
 type ModuleLoaderLike = { loadModules: (self: any) -> () }
@@ -28,14 +28,14 @@ local function createModuleLoaderTests(
             shared: { ModuleScript }?,
             self: { ModuleScript }?,
             reporter: Reporter?,
-            useNestedMode: boolean?,
+            useRecursiveMode: boolean?,
             services: any,
         })
             return loader({
                 shared = config.shared,
                 self = config.self,
                 reporter = config.reporter,
-                useNestedMode = config.useNestedMode,
+                useRecursiveMode = config.useRecursiveMode,
                 requireModule = requireMock.requireModule,
                 services = config.services,
             })
@@ -72,7 +72,7 @@ local function createModuleLoaderTests(
 
                             local moduleLoader = createModuleLoader({
                                 [moduleKind] = { moduleA, moduleB } :: any,
-                                useNestedMode = true,
+                                useRecursiveMode = true,
                             })
                             moduleLoader:loadModules()
 
@@ -92,7 +92,7 @@ local function createModuleLoaderTests(
 
                             local moduleLoader = createModuleLoader({
                                 [moduleKind] = { moduleA } :: any,
-                                useNestedMode = true,
+                                useRecursiveMode = true,
                             })
                             moduleLoader:loadModules()
 
@@ -112,7 +112,7 @@ local function createModuleLoaderTests(
 
                             local moduleLoader = createModuleLoader({
                                 [moduleKind] = { moduleA, moduleC } :: any,
-                                useNestedMode = true,
+                                useRecursiveMode = true,
                             })
                             moduleLoader:loadModules()
 
@@ -135,7 +135,7 @@ local function createModuleLoaderTests(
 
                             local moduleLoader = createModuleLoader({
                                 [moduleKind] = { moduleA } :: any,
-                                useNestedMode = true,
+                                useRecursiveMode = true,
                             })
                             moduleLoader:loadModules()
 
@@ -163,7 +163,7 @@ local function createModuleLoaderTests(
                     local moduleLoader = createModuleLoader({
                         shared = { moduleA },
                         self = { moduleC },
-                        useNestedMode = true,
+                        useRecursiveMode = true,
                     })
                     moduleLoader:loadModules()
 
@@ -181,9 +181,9 @@ local function createModuleLoaderTests(
             )
         end)
 
-        for _, useNestedMode in { false, true } do
+        for _, useRecursiveMode in { false, true } do
             local describeName = 'modules signature'
-                .. if useNestedMode then ' (nested mode)' else ''
+                .. if useRecursiveMode then ' (nested mode)' else ''
 
             describe(describeName, function()
                 local moduleA2: ModuleScriptMock
@@ -207,7 +207,7 @@ local function createModuleLoaderTests(
                 local servicesMock
 
                 beforeEach(function()
-                    if useNestedMode then
+                    if useRecursiveMode then
                         moduleA2 = requireMock:createModule('A2', noPlayerFunctions)
                         moduleB2 = requireMock:createModule('B2', noPlayerFunctions)
                         moduleB3 = requireMock:createModule('B3', noPlayerFunctions)
@@ -228,7 +228,7 @@ local function createModuleLoaderTests(
                         shared = { moduleA, moduleB },
                         self = { moduleC, moduleD },
                         services = servicesMock,
-                        useNestedMode = useNestedMode,
+                        useRecursiveMode = useRecursiveMode,
                     })
                     moduleLoader:loadModules()
 
@@ -237,7 +237,7 @@ local function createModuleLoaderTests(
                     cLoadedWith = requireMock:getRequiredArgs(moduleC)
                     dLoadedWith = requireMock:getRequiredArgs(moduleD)
 
-                    if useNestedMode then
+                    if useRecursiveMode then
                         a2LoadedWith = requireMock:getRequiredArgs(moduleA2)
                         b2LoadedWith = requireMock:getRequiredArgs(moduleB2)
                         b3LoadedWith = requireMock:getRequiredArgs(moduleB3)
@@ -258,7 +258,7 @@ local function createModuleLoaderTests(
                     expect(dLoadedWith.n).to.equal(3)
                 end)
 
-                if useNestedMode then
+                if useRecursiveMode then
                     it('loads shared modules with nested module', function()
                         local aModules = aLoadedWith[1]
                         expect(aModules.A2).to.equal(requireMock:getContent(moduleA2))

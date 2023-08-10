@@ -42,7 +42,7 @@ type Private = {
         localModules: { [string]: any }
     ) -> (),
 
-    _useNestedMode: boolean,
+    _useRecursiveMode: boolean,
     _localModules: { [ModuleScript]: { [string]: any } },
 }
 
@@ -55,7 +55,7 @@ type NewClientModuleLoaderOptions = {
     reporter: Reporter?,
     requireModule: <T...>(moduleScript: ModuleScript, T...) -> ()?,
     services: Services?,
-    useNestedMode: boolean?,
+    useRecursiveMode: boolean?,
 }
 
 type ClientModuleLoaderStatic = ClientModuleLoader & Private & {
@@ -140,7 +140,7 @@ function ClientModuleLoader:_loadSharedModules(): { CrosswalkModule }
         self:_verifySharedModuleName(moduleName, self._shared)
 
         local localSharedModules = nil
-        if self._useNestedMode then
+        if self._useRecursiveMode then
             localSharedModules = {}
             self._localModules[moduleScript] = localSharedModules
         else
@@ -159,7 +159,7 @@ function ClientModuleLoader:_loadSharedModules(): { CrosswalkModule }
         table.insert(sharedModules, module)
     end
 
-    if self._useNestedMode then
+    if self._useRecursiveMode then
         for _, moduleScript in self._sharedScripts do
             local localSharedModules = self._localModules[moduleScript]
 
@@ -217,7 +217,7 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
         self:_verifyClientModuleName(moduleName, self._client)
 
         local localClientModules = nil
-        if self._useNestedMode then
+        if self._useRecursiveMode then
             localClientModules = {}
             self._localModules[moduleScript] = localClientModules
         else
@@ -253,7 +253,7 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
         table.insert(clientModules, module)
     end
 
-    if self._useNestedMode then
+    if self._useRecursiveMode then
         for _, moduleScript in self._clientScripts do
             local localClientModules = self._localModules[moduleScript]
 
@@ -316,7 +316,7 @@ function ClientModuleLoader.new(options: NewClientModuleLoaderOptions): ClientMo
         _requireModule = options.requireModule or requireModule,
         _reporter = options.reporter or Reporter.default(),
         _services = options.services or ClientServices,
-        _useNestedMode = options.useNestedMode or false,
+        _useRecursiveMode = options.useRecursiveMode or false,
         _localModules = {},
     }, ClientModuleLoaderMetatable) :: any
 end

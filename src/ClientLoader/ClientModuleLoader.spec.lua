@@ -26,7 +26,7 @@ return function()
         player: Player?,
         clientRemotes: ClientRemotes?,
         reporter: ReporterBuilder.Reporter?,
-        useNestedMode: boolean?,
+        useRecursiveMode: boolean?,
         services: any,
     }
     local function newModuleLoader(config: NewModuleLoaderConfig?)
@@ -39,7 +39,7 @@ return function()
             requireModule = config.requireModule or requireMock.requireModule,
             clientRemotes = config.clientRemotes or createClientRemotesMock(),
             reporter = config.reporter,
-            useNestedMode = config.useNestedMode,
+            useRecursiveMode = config.useRecursiveMode,
             services = config.services,
         })
     end
@@ -57,7 +57,7 @@ return function()
                 client = config.self,
                 shared = config.shared,
                 reporter = config.reporter,
-                useNestedMode = config.useNestedMode,
+                useRecursiveMode = config.useRecursiveMode,
                 services = config.services,
             })
         end)

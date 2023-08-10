@@ -43,9 +43,9 @@ type Private = {
     _requireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
     _services: Services.Services,
 
-    _useNestedMode: boolean,
+    _useRecursiveMode: boolean,
     _localModules: { [ModuleScript]: { [string]: any } },
-    _loadNestedModule: (
+    _loadModuleRecursive: (
         self: ModuleLoader,
         moduleScript: ModuleScript,
         verifyName: (moduleName: string, localModules: { [string]: any }) -> (),
@@ -82,7 +82,7 @@ export type NewModuleLoaderOptions = {
     reporter: Reporter?,
     requireModule: <T...>(moduleScript: ModuleScript, T...) -> ()?,
     services: Services.Services?,
-    useNestedMode: boolean?,
+    useRecursiveMode: boolean?,
 }
 
 type ModuleLoaderStatic = ModuleLoader & Private & {
@@ -160,7 +160,7 @@ function ModuleLoader:_loadSharedModules(): { CrosswalkModule }
         self:_verifySharedModuleName(moduleName, self.shared)
 
         local localSharedModules = nil
-        if self._useNestedMode then
+        if self._useRecursiveMode then
             localSharedModules = {}
             self._localModules[moduleScript] = localSharedModules
         else
@@ -179,7 +179,7 @@ function ModuleLoader:_loadSharedModules(): { CrosswalkModule }
         table.insert(sharedModules, module)
     end
 
-    if self._useNestedMode then
+    if self._useRecursiveMode then
         for _, moduleScript in self.sharedScripts do
             local localSharedModules = self._localModules[moduleScript]
 
@@ -187,7 +187,7 @@ function ModuleLoader:_loadSharedModules(): { CrosswalkModule }
                 localSharedModules[name] = content
             end
 
-            local nestedModules = self:_loadNestedModule(
+            local nestedModules = self:_loadModuleRecursive(
                 moduleScript,
                 function(subModuleName, localModules)
                     self:_verifySharedModuleName(subModuleName, localModules)
@@ -251,7 +251,7 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
         self:_verifyServerModuleName(moduleName, self.server)
 
         local localServerModules = nil
-        if self._useNestedMode then
+        if self._useRecursiveMode then
             localServerModules = {}
             self._localModules[moduleScript] = localServerModules
         else
@@ -356,7 +356,7 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
         table.insert(serverModules, module)
     end
 
-    if self._useNestedMode then
+    if self._useRecursiveMode then
         for _, moduleScript in self.serverScripts do
             local localServerModules = self._localModules[moduleScript]
 
@@ -364,7 +364,7 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
                 localServerModules[name] = content
             end
 
-            local nestedModules = self:_loadNestedModule(
+            local nestedModules = self:_loadModuleRecursive(
                 moduleScript,
                 function(subModuleName, localModules)
                     self:_verifyServerModuleName(subModuleName, localModules)
@@ -379,7 +379,7 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
     return serverModules
 end
 
-function ModuleLoader:_loadNestedModule(
+function ModuleLoader:_loadModuleRecursive(
     moduleScript: ModuleScript,
     verifyName: (
         moduleName: string,
@@ -603,7 +603,7 @@ function ModuleLoader.new(options: NewModuleLoaderOptions): ModuleLoader
         _reporter = options.reporter or Reporter.default(),
         _services = options.services or Services,
         _requireModule = options.requireModule or requireModule,
-        _useNestedMode = options.useNestedMode or false,
+        _useRecursiveMode = options.useRecursiveMode or false,
         _localModules = {},
     }, ModuleLoaderMetatable) :: any
 end
