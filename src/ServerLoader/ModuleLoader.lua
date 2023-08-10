@@ -216,10 +216,6 @@ function ModuleLoader:_verifySharedModuleName(moduleName: string, localModules: 
         'shared module named %q was already registered as a shared module',
         moduleName
     )
-    self._reporter:assert(
-        'shared module named %q was already registered as a shared module',
-        moduleName
-    )
 end
 
 function ModuleLoader:_verifyServerModuleName(moduleName: string, localModules: { [string]: any })
