@@ -316,7 +316,9 @@ function ClientModuleLoader.new(options: NewClientModuleLoaderOptions): ClientMo
         _requireModule = options.requireModule or requireModule,
         _reporter = options.reporter or Reporter.default(),
         _services = options.services or ClientServices,
-        _useRecursiveMode = options.useRecursiveMode or false,
+        _useRecursiveMode = if options.useRecursiveMode == nil
+            then true
+            else options.useRecursiveMode,
         _localModules = {},
     }, ClientModuleLoaderMetatable) :: any
 end

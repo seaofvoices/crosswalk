@@ -49,6 +49,7 @@ export type ServerLoaderConfiguration = {
     onUnapprovedExecution: ((Player, { moduleName: string, functionName: string }) -> ())?,
     remoteCallMaxDelay: number?,
     services: Services?,
+    useRecursiveMode: boolean?,
 }
 type ServerLoaderStatic = ServerLoader & Private & {
     new: (configuration: ServerLoaderConfiguration) -> ServerLoader,
@@ -97,6 +98,7 @@ function ServerLoader.new(configuration): ServerLoader
             external = configuration.externalModules,
             serverRemotes = serverRemotes,
             reporter = reporter,
+            useRecursiveMode = configuration.useRecursiveMode,
         })
 
     return setmetatable({

@@ -30,6 +30,7 @@ type ClientLoaderConfiguration = {
     reporter: Reporter?,
     player: Player?,
     services: Services?,
+    useRecursiveMode: boolean?,
 }
 type ClientLoaderStatic = ClientLoader & Private & {
     new: (configuration: ClientLoaderConfiguration) -> ClientLoader,
@@ -72,6 +73,7 @@ function ClientLoader.new(configuration: ClientLoaderConfiguration): ClientLoade
             reporter = reporter,
             services = configuration.services or ClientServices,
             clientRemotes = clientRemotes,
+            useRecursiveMode = configuration.useRecursiveMode,
         })
 
     return setmetatable({
