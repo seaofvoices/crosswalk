@@ -21,7 +21,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify code format
-        run: stylua --check src .lune
+        run: stylua --check src .lune test-place
 
   selene-check:
     name: Selene analysis
