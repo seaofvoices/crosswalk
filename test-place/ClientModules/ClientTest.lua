@@ -45,10 +45,10 @@ return function(Modules, ServerModules, Services)
     end
 
     function module.RunTests_event()
-        print("Verify ClientTest")
+        print('Verify ClientTest')
         assert(Modules.Utils ~= nil)
-		assert(Modules.Utils.GetName() == "utility")
-		Modules.Utils.Verify()
+        assert(Modules.Utils.GetName() == 'utility')
+        Modules.Utils.Verify()
         assert(Modules.SubUtils == nil)
 
         warn('CLIENT HAS STARTED TESTS. CHECK IF ALL STRINGS ARE EQUAL')

@@ -14,5 +14,13 @@ return function(SharedModules, Services, isServer)
         print('SharedTest.PrintShared(' .. (isServer and 'server' or 'client') .. '):', ...)
     end
 
+    function module.Verify()
+        print('Verify SharedTest')
+        assert(SharedModules.SharedUtils ~= nil)
+        assert(SharedModules.SharedUtils.GetName() == 'utility')
+        SharedModules.SharedUtils.Verify()
+        assert(SharedModules.SharedSubUtils == nil)
+    end
+
     return module, private
 end

@@ -61,6 +61,12 @@ return function(Modules, ClientModules, Services)
     end
 
     function module.RunTests_event(player)
+        print('Verify ServerTest')
+        assert(Modules.ServerUtils ~= nil)
+        assert(Modules.ServerUtils.GetName() == 'utility')
+        Modules.ServerUtils.Verify()
+        assert(Modules.SubUtils == nil)
+
         warn('STARTING SERVER TESTS FROM ' .. player.Name)
         print('\n')
 
