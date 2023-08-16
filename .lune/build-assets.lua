@@ -27,6 +27,7 @@ end
 type DarkluaConfigOptions = { config: string, container: string }
 type BuildAssetOptions = {
     name: string,
+    outPath: string?,
     srcs: { string }?,
     darkluaConfigs: { DarkluaConfigOptions }?,
     rojoSourcemapConfig: string?,
@@ -107,7 +108,7 @@ local function buildAsset(options: BuildAssetOptions)
         log('darklua stderr:', darkluaResult.stderr)
 
         FsHelpers.createAllDirectories(info.container)
-        local assetLocation = PathUtils.join(info.container, options.name .. '.rbxm')
+        local assetLocation = options.outPath or PathUtils.join(info.container, options.name .. '.rbxm')
         log('build asset...', assetLocation)
 
         rojoBuild(rojoConfigPath, assetLocation)
@@ -160,6 +161,13 @@ local duration = Async.runTree(Async.seq({
         FsHelpers.createAllDirectories(buildFolder)
     end,
     Async.parallel({
+        function()
+            buildAsset({
+                name = 'test-place',
+                outPath = "test-places/project-test.rbxl",
+                copyContent = { 'test-place', 'modules' },
+            })
+        end,
         function()
             local tmpPlace = PathUtils.join(buildFolder, 'tmp-place.rbxl')
             print('create test place template', tmpPlace)
