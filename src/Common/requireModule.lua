@@ -2,6 +2,7 @@ export type CrosswalkModule = {
     Init: (() -> ())?,
     Start: (() -> ())?,
     OnPlayerReady: ((Player) -> ())?,
+    OnPlayerLeaving: ((Player) -> ())?,
 }
 
 local function requireModule<T...>(moduleScript: ModuleScript, ...: T...): CrosswalkModule

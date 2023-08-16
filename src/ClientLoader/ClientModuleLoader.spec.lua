@@ -232,5 +232,81 @@ return function()
                 moduleLoader:loadModules()
             end).to.throw()
         end)
+
+        describe('onPlayerReady', function()
+            local player = nil
+
+            beforeEach(function()
+                player = Mocks.Player.new()
+                moduleA = requireMock:createModule('A')
+                moduleB = requireMock:createModule('B')
+            end)
+
+            it('calls `OnPlayerReady` functions on client modules', function()
+                local moduleLoader = newModuleLoader({
+                    client = { moduleA },
+                    player = player,
+                })
+                moduleLoader:loadModules()
+
+                requireMock:expectEventLabels(expect, {
+                    'A-Init',
+                    'A-Start',
+                    'A-OnPlayerReady',
+                })
+
+                local onPlayerReadyParameters = requireMock:getEvent(3).parameters
+                expect(onPlayerReadyParameters.n).to.equal(1)
+                expect(onPlayerReadyParameters[1]).to.equal(player)
+            end)
+
+            it('calls `OnPlayerReady` functions on nested client modules', function()
+                moduleA.GetChildren:returnSameValue({ moduleB })
+
+                local moduleLoader = newModuleLoader({
+                    client = { moduleA },
+                    player = player,
+                    useRecursiveMode = true,
+                })
+                moduleLoader:loadModules()
+
+                requireMock:expectEventLabels(expect, {
+                    'A-Init',
+                    'B-Init',
+                    'A-Start',
+                    'B-Start',
+                    'A-OnPlayerReady',
+                    'B-OnPlayerReady',
+                })
+
+                for i = 5, 6 do
+                    local onPlayerLeavingParameters = requireMock:getEvent(i).parameters
+                    expect(onPlayerLeavingParameters.n).to.equal(1)
+                    expect(onPlayerLeavingParameters[1]).to.equal(player)
+                end
+            end)
+
+            it('does not call `OnPlayerReady` on shared modules', function()
+                local moduleLoader = newModuleLoader({
+                    shared = { moduleA },
+                    client = { moduleB },
+                    player = player,
+                    reporter = ReporterBuilder.new():build(),
+                })
+                moduleLoader:loadModules()
+
+                requireMock:expectEventLabels(expect, {
+                    'A-Init',
+                    'B-Init',
+                    'A-Start',
+                    'B-Start',
+                    'B-OnPlayerReady',
+                })
+
+                local onPlayerReadyParameters = requireMock:getEvent(5).parameters
+                expect(onPlayerReadyParameters.n).to.equal(1)
+                expect(onPlayerReadyParameters[1]).to.equal(player)
+            end)
+        end)
     end)
 end

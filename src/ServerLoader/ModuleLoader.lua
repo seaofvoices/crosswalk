@@ -228,7 +228,12 @@ function ModuleLoader:_verifyServerModuleName(moduleName: string, localModules: 
         moduleName
     )
     self._reporter:assert(
-        self.shared[moduleName] == nil and localModules[moduleName] == nil,
+        self.shared[moduleName] == nil,
+        'server module named %q was already registered as a shared module',
+        moduleName
+    )
+    self._reporter:assert(
+        localModules[moduleName] == nil,
         'server module named %q was already registered as a server module',
         moduleName
     )
@@ -486,8 +491,8 @@ function ModuleLoader:onPlayerReady(player: Player)
         player.Name
     )
     self._ranOnPlayerReady[player] = true
-    for name, module in pairs(self.server) do
-        if self.shared[name] == nil and module.OnPlayerReady then
+    for _, module in self._onlyServer do
+        if module.OnPlayerReady then
             task.spawn(module.OnPlayerReady, player)
         end
     end
@@ -499,8 +504,8 @@ function ModuleLoader:onPlayerRemoving(player: Player)
     self.serverRemotes:clearPlayer(player)
     self._ranOnPlayerReady[player] = nil
 
-    for name, module in pairs(self.server) do
-        if self.shared[name] == nil and module.OnPlayerLeaving then
+    for _, module in self._onlyServer do
+        if module.OnPlayerLeaving then
             task.spawn(module.OnPlayerLeaving, player)
         end
     end

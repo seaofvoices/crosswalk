@@ -560,6 +560,33 @@ return function()
             expect(onPlayerReadyParameters[1]).to.equal(player)
         end)
 
+        it('calls `OnPlayerReady` functions on nested server modules', function()
+            moduleA.GetChildren:returnSameValue({ moduleB })
+
+            local moduleLoader = newModuleLoader({
+                server = { moduleA },
+                useRecursiveMode = true,
+            })
+            moduleLoader:loadModules()
+            local player = Mocks.Player.new()
+            moduleLoader:onPlayerReady(player)
+
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'B-Init',
+                'A-Start',
+                'B-Start',
+                'A-OnPlayerReady',
+                'B-OnPlayerReady',
+            })
+
+            for i = 5, 6 do
+                local onPlayerLeavingParameters = requireMock:getEvent(i).parameters
+                expect(onPlayerLeavingParameters.n).to.equal(1)
+                expect(onPlayerLeavingParameters[1]).to.equal(player)
+            end
+        end)
+
         it('does not call `OnPlayerReady` on shared modules', function()
             local moduleLoader = newModuleLoader({
                 shared = { moduleA },
@@ -610,6 +637,33 @@ return function()
             local onPlayerLeavingParameters = requireMock:getEvent(3).parameters
             expect(onPlayerLeavingParameters.n).to.equal(1)
             expect(onPlayerLeavingParameters[1]).to.equal(player)
+        end)
+
+        it('calls `OnPlayerLeaving` functions on nested server modules', function()
+            moduleA.GetChildren:returnSameValue({ moduleB })
+
+            local moduleLoader = newModuleLoader({
+                server = { moduleA },
+                useRecursiveMode = true,
+            })
+            moduleLoader:loadModules()
+            local player = Mocks.Player.new()
+            moduleLoader:onPlayerRemoving(player)
+
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'B-Init',
+                'A-Start',
+                'B-Start',
+                'A-OnPlayerLeaving',
+                'B-OnPlayerLeaving',
+            })
+
+            for i = 5, 6 do
+                local onPlayerLeavingParameters = requireMock:getEvent(i).parameters
+                expect(onPlayerLeavingParameters.n).to.equal(1)
+                expect(onPlayerLeavingParameters[1]).to.equal(player)
+            end
         end)
 
         it('does not call `OnPlayerLeaving` on shared modules', function()
