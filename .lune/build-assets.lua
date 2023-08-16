@@ -108,7 +108,8 @@ local function buildAsset(options: BuildAssetOptions)
         log('darklua stderr:', darkluaResult.stderr)
 
         FsHelpers.createAllDirectories(info.container)
-        local assetLocation = options.outPath or PathUtils.join(info.container, options.name .. '.rbxm')
+        local assetLocation = options.outPath
+            or PathUtils.join(info.container, options.name .. '.rbxm')
         log('build asset...', assetLocation)
 
         rojoBuild(rojoConfigPath, assetLocation)
@@ -164,7 +165,7 @@ local duration = Async.runTree(Async.seq({
         function()
             buildAsset({
                 name = 'test-place',
-                outPath = "test-places/project-test.rbxl",
+                outPath = 'test-places/project-test.rbxl',
                 copyContent = { 'test-place', 'modules' },
             })
         end,
