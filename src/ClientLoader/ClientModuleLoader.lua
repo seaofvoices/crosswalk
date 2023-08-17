@@ -5,6 +5,7 @@ type CrosswalkModule = requireModule.CrosswalkModule
 local Reporter = require('../Common/Reporter')
 type Reporter = Reporter.Reporter
 local loadNestedModules = require('../Common/loadNestedModules')
+local sortModuleByLevel = require('../Common/sortModuleByLevel')
 local validateSharedModule = require('../Common/validateSharedModule')
 local ClientRemotes = require('./ClientRemotes')
 type ClientRemotes = ClientRemotes.ClientRemotes
@@ -133,7 +134,7 @@ function ClientModuleLoader:_loadSharedModules(): { CrosswalkModule }
     local self = self :: ClientModuleLoader & Private
 
     local sharedModules = {}
-    for _, moduleScript in self._sharedScripts do
+    for siblingOrder, moduleScript in self._sharedScripts do
         local moduleName = moduleScript.Name
         self._reporter:debug('loading shared module `%s`', moduleName)
 
@@ -156,34 +157,35 @@ function ClientModuleLoader:_loadSharedModules(): { CrosswalkModule }
         self._shared[moduleName] = module
         self._client[moduleName] = module
 
-        table.insert(sharedModules, module)
+        table.insert(sharedModules, {
+            module = module,
+            orders = { siblingOrder },
+        })
     end
 
     if self._useRecursiveMode then
-        for _, moduleScript in self._sharedScripts do
+        for siblingOrder, moduleScript in self._sharedScripts do
             local localSharedModules = self._localModules[moduleScript]
 
             for name, content in self._shared do
                 localSharedModules[name] = content
             end
 
-            local nestedModules = loadNestedModules(
-                moduleScript,
-                self._reporter,
-                self._requireModule,
-                self._localModules,
-                nil,
-                function(subModuleName, localModules)
+            local nestedModules = loadNestedModules({
+                module = moduleScript,
+                reporter = self._reporter,
+                requireModule = self._requireModule,
+                localModulesMap = self._localModules,
+                orders = { siblingOrder },
+                verifyName = function(subModuleName, localModules)
                     self:_verifySharedModuleName(subModuleName, localModules)
                 end,
-                self._services,
-                false
-            )
+            }, self._services, false)
             table.move(nestedModules, 1, #nestedModules, #sharedModules + 1, sharedModules)
         end
     end
 
-    return sharedModules
+    return sortModuleByLevel(sharedModules)
 end
 
 function ClientModuleLoader:_verifySharedModuleName(
@@ -211,7 +213,7 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
     local clientModules = {}
     local serverModules = self._clientRemotes:getServerModules()
 
-    for _, moduleScript in self._clientScripts do
+    for siblingOrder, moduleScript in self._clientScripts do
         local moduleName = moduleScript.Name
         self._reporter:debug('loading client module `%s`', moduleName)
 
@@ -251,11 +253,14 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
         end
 
         self._client[moduleName] = module
-        table.insert(clientModules, module)
+        table.insert(clientModules, {
+            module = module,
+            orders = { siblingOrder },
+        })
     end
 
     if self._useRecursiveMode then
-        for _, moduleScript in self._clientScripts do
+        for siblingOrder, moduleScript in self._clientScripts do
             local localClientModules = self._localModules[moduleScript]
 
             for name, content in self._client do
@@ -264,23 +269,22 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
                 end
             end
 
-            local nestedModules = loadNestedModules(
-                moduleScript,
-                self._reporter,
-                self._requireModule,
-                self._localModules,
-                self._shared,
-                function(subModuleName, localModules)
+            local nestedModules = loadNestedModules({
+                module = moduleScript,
+                reporter = self._reporter,
+                requireModule = self._requireModule,
+                localModulesMap = self._localModules,
+                baseModules = self._shared,
+                orders = { siblingOrder },
+                verifyName = function(subModuleName, localModules)
                     self:_verifyClientModuleName(subModuleName, localModules)
                 end,
-                serverModules,
-                self._services
-            )
+            }, serverModules, self._services)
             table.move(nestedModules, 1, #nestedModules, #clientModules + 1, clientModules)
         end
     end
 
-    return clientModules
+    return sortModuleByLevel(clientModules)
 end
 
 function ClientModuleLoader:_verifyClientModuleName(

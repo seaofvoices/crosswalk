@@ -3,17 +3,22 @@ local requireModule = require('./requireModule')
 type CrosswalkModule = requireModule.CrosswalkModule
 
 local function loadNestedModule(
-    moduleScript: ModuleScript,
-    reporter: Reporter.Reporter,
-    customRequireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
-    localModulesMap: { [ModuleScript]: { [string]: any } },
-    baseModules: { [string]: any }?,
-    verifyName: (
-        moduleName: string,
-        localModules: { [string]: any }
-    ) -> (),
+    options: {
+        module: ModuleScript,
+        reporter: Reporter.Reporter,
+        requireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
+        localModulesMap: { [ModuleScript]: { [string]: any } },
+        baseModules: { [string]: any }?,
+        orders: { number },
+        verifyName: (moduleName: string, localModules: { [string]: any }) -> (),
+    },
     ...
-): { CrosswalkModule }
+): { { module: CrosswalkModule, orders: { number } } }
+    local moduleScript = options.module
+    local reporter = options.reporter
+    local localModulesMap = options.localModulesMap
+    local baseModules = options.baseModules
+
     local children = moduleScript:GetChildren()
 
     if #children == 0 then
@@ -30,20 +35,28 @@ local function loadNestedModule(
     reporter:debug('loading nested modules of `%s`:', moduleScript.Name)
 
     local loadedModules = {}
+    local ordersMap = {}
 
-    for _, subModule in children do
+    for siblingOrder, subModule in children do
         if subModule:IsA('ModuleScript') then
             local subModuleName = subModule.Name
             reporter:debug('  > loading nested module `%s`', subModuleName)
 
-            verifyName(subModuleName, parentModules)
+            options.verifyName(subModuleName, parentModules)
 
             local subLocalModules = if baseModules == nil then {} else table.clone(baseModules)
             localModulesMap[subModule] = subLocalModules
 
-            local module = customRequireModule(subModule, subLocalModules, ...)
+            local module = options.requireModule(subModule, subLocalModules, ...)
 
-            table.insert(loadedModules, module)
+            local orders = table.clone(options.orders)
+            table.insert(orders, siblingOrder)
+            ordersMap[subModule] = orders
+
+            table.insert(loadedModules, {
+                module = module,
+                orders = orders,
+            })
             parentModules[subModuleName] = module
         end
     end
@@ -62,15 +75,15 @@ local function loadNestedModule(
                 localModules[name] = module
             end
 
-            local nestedModules = loadNestedModule(
-                subModule,
-                reporter,
-                customRequireModule,
-                localModulesMap,
-                baseModules,
-                verifyName,
-                ...
-            )
+            local nestedModules = loadNestedModule({
+                module = subModule,
+                reporter = reporter,
+                requireModule = options.requireModule,
+                localModulesMap = localModulesMap,
+                baseModules = baseModules,
+                orders = ordersMap[subModule],
+                verifyName = options.verifyName,
+            }, ...)
 
             table.move(nestedModules, 1, #nestedModules, #loadedModules + 1, loadedModules)
         end

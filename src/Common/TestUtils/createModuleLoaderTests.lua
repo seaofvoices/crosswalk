@@ -161,6 +161,59 @@ local function createModuleLoaderTests(
                                 'D-Start',
                             })
                         end)
+
+                        it('calls Init functions in the correct order', function()
+                            -- Create this a module structure:
+                            -- A
+                            -- - B
+                            -- - - C
+                            -- - D
+                            -- - - E
+                            -- F
+                            -- - G
+                            -- - - H
+                            -- - I
+
+                            local onlyInitFunctions = {
+                                Start = false,
+                                OnPlayerReady = false,
+                                OnPlayerLeaving = false,
+                            }
+                            requireMock:reset()
+                            moduleA = requireMock:createModule('A', onlyInitFunctions)
+                            moduleB = requireMock:createModule('B', onlyInitFunctions)
+                            moduleC = requireMock:createModule('C', onlyInitFunctions)
+                            moduleD = requireMock:createModule('D', onlyInitFunctions)
+                            local moduleE = requireMock:createModule('E', onlyInitFunctions)
+                            local moduleF = requireMock:createModule('F', onlyInitFunctions)
+                            local moduleG = requireMock:createModule('G', onlyInitFunctions)
+                            local moduleH = requireMock:createModule('H', onlyInitFunctions)
+                            local moduleI = requireMock:createModule('I', onlyInitFunctions)
+
+                            moduleA.GetChildren:returnSameValue({ moduleB, moduleD })
+                            moduleB.GetChildren:returnSameValue({ moduleC })
+                            moduleD.GetChildren:returnSameValue({ moduleE })
+                            moduleF.GetChildren:returnSameValue({ moduleG, moduleI })
+                            moduleG.GetChildren:returnSameValue({ moduleH })
+
+                            local moduleLoader = createModuleLoader({
+                                [moduleKind] = { moduleA, moduleF } :: any,
+                                useRecursiveMode = true,
+                            })
+                            moduleLoader:loadModules()
+
+                            requireMock:expectEventLabels(expect, {
+                                'A-Init',
+                                'F-Init',
+                                'B-Init',
+                                'D-Init',
+                                'G-Init',
+                                'I-Init',
+                                'C-Init',
+                                'E-Init',
+                                'H-Init',
+                            })
+                        end)
                     end
                 )
             end
