@@ -28,17 +28,17 @@ export type ModuleLoader = {
 
 type Private = {
     _hasLoaded: boolean,
-    serverScripts: { ModuleScript },
-    clientScripts: { ModuleScript },
-    sharedScripts: { ModuleScript },
-    external: { [string]: any },
+    _serverScripts: { ModuleScript },
+    _clientScripts: { ModuleScript },
+    _sharedScripts: { ModuleScript },
+    _external: { [string]: any },
     _ranOnPlayerReady: { [Player]: true },
-    shared: { [string]: any },
+    _shared: { [string]: any },
     _onlyShared: { CrosswalkModule },
-    server: { [string]: any },
+    _server: { [string]: any },
     _onlyServer: { CrosswalkModule },
-    client: { [string]: any },
-    serverRemotes: ServerRemotes,
+    _client: { [string]: any },
+    _serverRemotes: ServerRemotes,
     _reporter: Reporter.Reporter,
     _requireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
     _services: Services.Services,
@@ -96,10 +96,10 @@ function ModuleLoader:loadModules()
         'modules were already loaded once and cannot be loaded twice!'
     )
 
-    for moduleName, externalModule in pairs(self.external) do
+    for moduleName, externalModule in self._external do
         self._reporter:debug('adding external module `%s`', moduleName)
-        self.shared[moduleName] = externalModule
-        self.server[moduleName] = externalModule
+        self._shared[moduleName] = externalModule
+        self._server[moduleName] = externalModule
     end
 
     self._reporter:debug('loading shared modules')
@@ -147,18 +147,18 @@ function ModuleLoader:_loadSharedModules(): { CrosswalkModule }
 
     local sharedModules = {}
 
-    for _, moduleScript in self.sharedScripts do
+    for _, moduleScript in self._sharedScripts do
         local moduleName = moduleScript.Name
         self._reporter:debug('loading shared module `%s`', moduleName)
 
-        self:_verifySharedModuleName(moduleName, self.shared)
+        self:_verifySharedModuleName(moduleName, self._shared)
 
         local localSharedModules = nil
         if self._useRecursiveMode then
             localSharedModules = {}
             self._localModules[moduleScript] = localSharedModules
         else
-            localSharedModules = self.shared
+            localSharedModules = self._shared
         end
 
         local module = self._requireModule(moduleScript, localSharedModules, self._services, true)
@@ -167,17 +167,17 @@ function ModuleLoader:_loadSharedModules(): { CrosswalkModule }
             validateSharedModule(module, moduleName, self._reporter)
         end
 
-        self.shared[moduleName] = module
-        self.server[moduleName] = module
+        self._shared[moduleName] = module
+        self._server[moduleName] = module
 
         table.insert(sharedModules, module)
     end
 
     if self._useRecursiveMode then
-        for _, moduleScript in self.sharedScripts do
+        for _, moduleScript in self._sharedScripts do
             local localSharedModules = self._localModules[moduleScript]
 
-            for name, content in self.shared do
+            for name, content in self._shared do
                 localSharedModules[name] = content
             end
 
@@ -204,13 +204,13 @@ function ModuleLoader:_verifySharedModuleName(moduleName: string, localModules: 
     local self = self :: ModuleLoader & Private
 
     self._reporter:assert(
-        self.external[moduleName] == nil,
+        self._external[moduleName] == nil,
         'shared module named %q was already provided as an external server module. Rename '
             .. 'the shared module or the external module',
         moduleName
     )
     self._reporter:assert(
-        self.shared[moduleName] == nil and localModules[moduleName] == nil,
+        self._shared[moduleName] == nil and localModules[moduleName] == nil,
         'shared module named %q was already registered as a shared module',
         moduleName
     )
@@ -220,13 +220,13 @@ function ModuleLoader:_verifyServerModuleName(moduleName: string, localModules: 
     local self = self :: ModuleLoader & Private
 
     self._reporter:assert(
-        self.external[moduleName] == nil,
+        self._external[moduleName] == nil,
         'server module named %q was already provided as an external server module. Rename '
             .. 'the server module or the external module',
         moduleName
     )
     self._reporter:assert(
-        self.shared[moduleName] == nil,
+        self._shared[moduleName] == nil,
         'server module named %q was already registered as a shared module',
         moduleName
     )
@@ -242,24 +242,24 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
 
     local serverModules = {}
 
-    for _, moduleScript in self.serverScripts do
+    for _, moduleScript in self._serverScripts do
         local moduleName = moduleScript.Name
         self._reporter:debug('loading server module `%s`', moduleName)
 
-        self:_verifyServerModuleName(moduleName, self.server)
+        self:_verifyServerModuleName(moduleName, self._server)
 
         local localServerModules = nil
         if self._useRecursiveMode then
-            localServerModules = table.clone(self.shared)
+            localServerModules = table.clone(self._shared)
             self._localModules[moduleScript] = localServerModules
         else
-            localServerModules = self.server
+            localServerModules = self._server
         end
 
         local api = {}
 
         local module =
-            self._requireModule(moduleScript, localServerModules, self.client, self._services)
+            self._requireModule(moduleScript, localServerModules, self._client, self._services)
 
         for functionName, func in pairs(module) do
             if type(func) == 'function' then
@@ -268,7 +268,7 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
 
                 if functionName:match(EVENT_PATTERN) then
                     name = extractFunctionName(functionName)
-                    self.serverRemotes:addEventToServer(
+                    self._serverRemotes:addEventToServer(
                         moduleName,
                         name,
                         func :: any,
@@ -302,7 +302,7 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
                     end
                 elseif functionName:match(FUNCTION_PATTERN) then
                     name = extractFunctionName(functionName)
-                    self.serverRemotes:addFunctionToServer(
+                    self._serverRemotes:addFunctionToServer(
                         moduleName,
                         name,
                         func :: any,
@@ -350,16 +350,16 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
             module[name] = newFunction
         end
 
-        self.server[moduleName] = module
+        self._server[moduleName] = module
         table.insert(serverModules, module)
     end
 
     if self._useRecursiveMode then
-        for _, moduleScript in self.serverScripts do
+        for _, moduleScript in self._serverScripts do
             local localServerModules = self._localModules[moduleScript]
 
-            for name, content in self.server do
-                if self.shared[name] == nil then
+            for name, content in self._server do
+                if self._shared[name] == nil then
                     localServerModules[name] = content
                 end
             end
@@ -369,11 +369,11 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
                 self._reporter,
                 self._requireModule,
                 self._localModules,
-                self.shared,
+                self._shared,
                 function(subModuleName, localModules)
                     self:_verifyServerModuleName(subModuleName, localModules)
                 end,
-                self.client,
+                self._client,
                 self._services
             )
             table.move(nestedModules, 1, #nestedModules, #serverModules + 1, serverModules)
@@ -386,21 +386,21 @@ end
 function ModuleLoader:_setupClientRemotes()
     local self = self :: ModuleLoader & Private
 
-    for _, moduleScript in self.clientScripts do
+    for _, moduleScript in self._clientScripts do
         local moduleName = moduleScript.Name
 
         self._reporter:assert(
-            self.shared[moduleName] == nil,
+            self._shared[moduleName] == nil,
             'client module named %q was already registered as a shared module',
             moduleName
         )
         self._reporter:assert(
-            self.server[moduleName] == nil,
+            self._server[moduleName] == nil,
             'client module named %q was already registered as a server module',
             moduleName
         )
         self._reporter:assert(
-            self.client[moduleName] == nil,
+            self._client[moduleName] == nil,
             'client module named %q was already registered as a client module',
             moduleName
         )
@@ -418,11 +418,11 @@ function ModuleLoader:_setupClientRemotes()
                 if functionName:match('_event$') then
                     name = functionName:match('(.+)_event$')
                     callClient, callAllClients =
-                        self.serverRemotes:addEventToClient(moduleName, name)
+                        self._serverRemotes:addEventToClient(moduleName, name)
                 elseif functionName:match('_func$') then
                     name = functionName:match('(.+)_func$')
                     callClient, callAllClients =
-                        self.serverRemotes:addFunctionToClient(moduleName, name)
+                        self._serverRemotes:addFunctionToClient(moduleName, name)
                 end
 
                 if name then
@@ -462,7 +462,7 @@ function ModuleLoader:_setupClientRemotes()
             end
         end
 
-        self.client[moduleName] = api
+        self._client[moduleName] = api
     end
 end
 
@@ -485,7 +485,7 @@ end
 function ModuleLoader:onPlayerRemoving(player: Player)
     local self = self :: ModuleLoader & Private
 
-    self.serverRemotes:clearPlayer(player)
+    self._serverRemotes:clearPlayer(player)
     self._ranOnPlayerReady[player] = nil
 
     for _, module in self._onlyServer do
@@ -502,7 +502,7 @@ function ModuleLoader:onUnapprovedExecution(
 ): boolean
     local self = self :: ModuleLoader & Private
 
-    local module = self.server[moduleName]
+    local module = self._server[moduleName]
     self._reporter:assert(
         module,
         'unapproved execution from player %q: module %q not found (looking for %s)',
@@ -573,17 +573,17 @@ end
 function ModuleLoader.new(options: NewModuleLoaderOptions): ModuleLoader
     return setmetatable({
         _hasLoaded = false,
-        shared = {},
+        _shared = {},
         _onlyShared = {},
-        server = {},
+        _server = {},
         _onlyServer = {},
-        client = {},
-        external = options.external or {},
+        _client = {},
+        _external = options.external or {},
         _ranOnPlayerReady = {},
-        sharedScripts = options.shared,
-        serverScripts = options.server,
-        clientScripts = options.client,
-        serverRemotes = options.serverRemotes,
+        _sharedScripts = options.shared,
+        _serverScripts = options.server,
+        _clientScripts = options.client,
+        _serverRemotes = options.serverRemotes,
         _reporter = options.reporter or Reporter.default(),
         _services = options.services or Services,
         _requireModule = options.requireModule or requireModule,
