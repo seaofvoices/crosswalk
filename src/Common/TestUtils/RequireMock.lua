@@ -19,6 +19,7 @@ export type RequireMock = {
     getEvent: (self: RequireMock, index: number) -> Event,
 
     requireModule: (ModuleScript, ...any) -> any,
+    onModuleLoaded: ((...any) -> ())?,
 }
 
 type Private = {
@@ -46,9 +47,14 @@ function RequireMock.new(): RequireMock
     self = {
         _cache = {},
         _callEvents = {},
+        onModuleLoaded = nil,
 
         requireModule = function(moduleScript: ModuleScript, ...)
             local self = self :: RequireMock & Private
+
+            if self.onModuleLoaded then
+                self.onModuleLoaded(moduleScript, ...)
+            end
 
             local moduleScriptMock = self._cache[moduleScript :: any]
 

@@ -45,12 +45,6 @@ type Private = {
 
     _useRecursiveMode: boolean,
     _localModules: { [ModuleScript]: { [string]: any } },
-    _loadModuleRecursive: (
-        self: ModuleLoader,
-        moduleScript: ModuleScript,
-        verifyName: (moduleName: string, localModules: { [string]: any }) -> (),
-        ...any
-    ) -> { CrosswalkModule },
 
     _verifyServerModuleName: (
         self: ModuleLoader,
@@ -187,8 +181,12 @@ function ModuleLoader:_loadSharedModules(): { CrosswalkModule }
                 localSharedModules[name] = content
             end
 
-            local nestedModules = self:_loadModuleRecursive(
+            local nestedModules = loadNestedModules(
                 moduleScript,
+                self._reporter,
+                self._requireModule,
+                self._localModules,
+                nil,
                 function(subModuleName, localModules)
                     self:_verifySharedModuleName(subModuleName, localModules)
                 end,
@@ -252,7 +250,7 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
 
         local localServerModules = nil
         if self._useRecursiveMode then
-            localServerModules = {}
+            localServerModules = table.clone(self.shared)
             self._localModules[moduleScript] = localServerModules
         else
             localServerModules = self.server
@@ -361,11 +359,17 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
             local localServerModules = self._localModules[moduleScript]
 
             for name, content in self.server do
-                localServerModules[name] = content
+                if self.shared[name] == nil then
+                    localServerModules[name] = content
+                end
             end
 
-            local nestedModules = self:_loadModuleRecursive(
+            local nestedModules = loadNestedModules(
                 moduleScript,
+                self._reporter,
+                self._requireModule,
+                self._localModules,
+                self.shared,
                 function(subModuleName, localModules)
                     self:_verifyServerModuleName(subModuleName, localModules)
                 end,
@@ -377,26 +381,6 @@ function ModuleLoader:_loadServerModules(): { CrosswalkModule }
     end
 
     return serverModules
-end
-
-function ModuleLoader:_loadModuleRecursive(
-    moduleScript: ModuleScript,
-    verifyName: (
-        moduleName: string,
-        localModules: { [string]: any }
-    ) -> (),
-    ...
-): { CrosswalkModule }
-    local self = self :: ModuleLoader & Private
-
-    return loadNestedModules(
-        moduleScript,
-        self._reporter,
-        self._requireModule,
-        self._localModules,
-        verifyName,
-        ...
-    )
 end
 
 function ModuleLoader:_setupClientRemotes()

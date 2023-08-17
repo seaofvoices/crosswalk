@@ -4,6 +4,7 @@ local Reporter = require('../Reporter')
 type Reporter = Reporter.Reporter
 local RequireMock = require('./RequireMock')
 type RequiredArgs = RequireMock.RequiredArgs
+local FunctionMock = require('./FunctionMock')
 
 type NewModuleLoaderConfig = {
     requireModule: (ModuleScript, ...any) -> any,
@@ -23,6 +24,7 @@ local function createModuleLoaderTests(
 )
     return function()
         local requireMock = RequireMock.new()
+        local requireModuleMock = nil
 
         local function createModuleLoader(config: {
             shared: { ModuleScript }?,
@@ -42,7 +44,16 @@ local function createModuleLoaderTests(
         end
 
         beforeEach(function()
+            requireModuleMock = FunctionMock.new()
             requireMock:reset()
+            requireMock.onModuleLoaded = function(...)
+                local args = { n = select('#', ...) }
+                for i = 1, args.n do
+                    local value = select(i, ...)
+                    args[i] = if type(value) == 'table' then table.clone(value) else value
+                end
+                requireModuleMock:call(unpack(args, 1, args.n))
+            end
         end)
 
         local noPlayerFunctions = {
@@ -179,6 +190,60 @@ local function createModuleLoaderTests(
                     })
                 end
             )
+        end)
+
+        for _, useRecursiveMode in { true, false } do
+            it(
+                ('loads %s modules with access to shared modules (recursiveMode = %s)'):format(
+                    kind,
+                    tostring(useRecursiveMode)
+                ),
+                function()
+                    local moduleLoader = createModuleLoader({
+                        self = { moduleA },
+                        shared = { moduleB },
+                        useRecursiveMode = useRecursiveMode,
+                    })
+                    moduleLoader:loadModules()
+
+                    expect(#requireModuleMock.calls).to.equal(2)
+                    expect(requireModuleMock.calls[1].argumentCount).to.equal(4)
+                    expect(requireModuleMock.calls[2].argumentCount).to.equal(4)
+
+                    local loadSharedModuleArguments = requireModuleMock.calls[1].arguments
+                    expect(loadSharedModuleArguments[1].Name).to.equal(moduleB.Name)
+
+                    local loadModuleArguments = requireModuleMock.calls[2].arguments
+                    expect(loadModuleArguments[1].Name).to.equal(moduleA.Name)
+                    expect(loadModuleArguments[2].B).to.be.a('table')
+                end
+            )
+        end
+
+        it(('loads nested %s modules with access to shared modules'):format(kind), function()
+            moduleA.GetChildren:returnSameValue({ moduleC })
+
+            local moduleLoader = createModuleLoader({
+                self = { moduleA },
+                shared = { moduleB },
+                useRecursiveMode = true,
+            })
+            moduleLoader:loadModules()
+
+            expect(#requireModuleMock.calls).to.equal(3)
+            expect(requireModuleMock.calls[1].argumentCount).to.equal(4)
+            expect(requireModuleMock.calls[2].argumentCount).to.equal(4)
+
+            local loadSharedModuleArguments = requireModuleMock.calls[1].arguments
+            expect(loadSharedModuleArguments[1].Name).to.equal(moduleB.Name)
+
+            local loadModuleArguments = requireModuleMock.calls[2].arguments
+            expect(loadModuleArguments[1].Name).to.equal(moduleA.Name)
+            expect(loadModuleArguments[2].B).to.be.a('table')
+
+            local loadNestedModuleArguments = requireModuleMock.calls[3].arguments
+            expect(loadNestedModuleArguments[1].Name).to.equal(moduleC.Name)
+            expect(loadNestedModuleArguments[2].B).to.be.a('table')
         end)
 
         for _, useRecursiveMode in { false, true } do

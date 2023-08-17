@@ -172,6 +172,7 @@ function ClientModuleLoader:_loadSharedModules(): { CrosswalkModule }
                 self._reporter,
                 self._requireModule,
                 self._localModules,
+                nil,
                 function(subModuleName, localModules)
                     self:_verifySharedModuleName(subModuleName, localModules)
                 end,
@@ -218,7 +219,7 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
 
         local localClientModules = nil
         if self._useRecursiveMode then
-            localClientModules = {}
+            localClientModules = table.clone(self._shared)
             self._localModules[moduleScript] = localClientModules
         else
             localClientModules = self._client
@@ -258,7 +259,9 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
             local localClientModules = self._localModules[moduleScript]
 
             for name, content in self._client do
-                localClientModules[name] = content
+                if self._shared[name] == nil then
+                    localClientModules[name] = content
+                end
             end
 
             local nestedModules = loadNestedModules(
@@ -266,6 +269,7 @@ function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
                 self._reporter,
                 self._requireModule,
                 self._localModules,
+                self._shared,
                 function(subModuleName, localModules)
                     self:_verifyClientModuleName(subModuleName, localModules)
                 end,

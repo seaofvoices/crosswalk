@@ -7,6 +7,7 @@ local function loadNestedModule(
     reporter: Reporter.Reporter,
     customRequireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
     localModulesMap: { [ModuleScript]: { [string]: any } },
+    baseModules: { [string]: any }?,
     verifyName: (
         moduleName: string,
         localModules: { [string]: any }
@@ -37,7 +38,7 @@ local function loadNestedModule(
 
             verifyName(subModuleName, parentModules)
 
-            local subLocalModules = {}
+            local subLocalModules = if baseModules == nil then {} else table.clone(baseModules)
             localModulesMap[subModule] = subLocalModules
 
             local module = customRequireModule(subModule, subLocalModules, ...)
@@ -66,6 +67,7 @@ local function loadNestedModule(
                 reporter,
                 customRequireModule,
                 localModulesMap,
+                baseModules,
                 verifyName,
                 ...
             )

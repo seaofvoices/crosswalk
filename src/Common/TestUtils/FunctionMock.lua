@@ -8,7 +8,7 @@ export type FunctionMock = {
     returnSameValue: (self: FunctionMock, ...any) -> AnyFn,
     setMockImplementation: (self: FunctionMock, callback: AnyFn) -> AnyFn,
     call: (self: FunctionMock, ...any) -> any,
-    expectCalls: (self: FunctionMock, expect: any, expectedCalls: {}) -> (),
+    expectCalls: (self: FunctionMock, expect: any, expectedCalls: { Call }) -> (),
     expectNeverCalled: (self: FunctionMock, expect: any) -> (),
     expectCalledOnce: (self: FunctionMock, expect: any, ...any) -> (),
 
