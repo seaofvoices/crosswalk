@@ -73,6 +73,6 @@ Then, all you have to do is put [ModuleScripts](https://developer.roblox.com/en-
 
 ## Modules
 
-Think about a module as if it was a service. It should provide capabilities by itself or offer capabilities to other modules. When thinking in modules, it is also usually better to tell a module to do something, rather then asking for their current state and then make them do something from that state (read about the *Tell Don't Ask Principle* if you want to know more).
+Think of a module as if it was a service. It should provide capabilities by itself or offer capabilities to other modules. When thinking in modules, it is also usually better to tell a module to do something, rather then asking for their current state and then make them do something from that state (read about the *Tell Don't Ask Principle* if you want to know more).
 
 The next sections of this guide will present the different types of modules in crosswalk. You will find more specific information about [client modules](ClientModules.md), [server modules](ServerModules.md) and [shared modules](SharedModules.md)
