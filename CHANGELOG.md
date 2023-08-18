@@ -2,6 +2,7 @@
 
 ## Unreleased Changes
 
+* Fix client loader to send ready signal after receiving server modules data ([#25](https://github.com/seaofvoices/crosswalk/pull/25))
 * Add recursive module loading ([#22](https://github.com/seaofvoices/crosswalk/pull/22))
 * Add support for providing external modules ([#16](https://gitlab.com/seaofvoices/crosswalk/-/merge_requests/16))
 * Update client loader ([#15](https://gitlab.com/seaofvoices/crosswalk/-/merge_requests/15))
