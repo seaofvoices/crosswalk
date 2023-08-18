@@ -38,6 +38,7 @@ type Private = {
     ) -> (...any) -> any,
     _yieldUntilNewKey: (self: ClientRemotes, module: string, functionName: string) -> (),
     _getRemotes: (self: ClientRemotes) -> Instance,
+    _waitForRemoteSetup: (self: ClientRemotes, initialLabel: string, callLabel: string) -> (),
 }
 
 type NewClientRemotesOptions = {
@@ -59,7 +60,7 @@ function ClientRemotes:listen()
 
     local remoteObjects = self:_getRemotes():GetChildren()
 
-    for _, remote in ipairs(remoteObjects) do
+    for _, remote in remoteObjects do
         if remote.Name:match('^[^ ]*  $') and remote:IsA('RemoteFunction') then
             task.spawn(function()
                 self.reporter:debug('invoking server for remote information')
@@ -82,7 +83,7 @@ end
 function ClientRemotes:disconnect()
     local self = self :: ClientRemotes & Private
 
-    for _, disconnect in ipairs(self.connections) do
+    for _, disconnect in self.connections do
         disconnect()
     end
     self.connections = {}
@@ -97,17 +98,13 @@ end
 function ClientRemotes:connectRemote(module, functionName, callback)
     local self = self :: ClientRemotes & Private
 
-    if not self.remotesSetup then
-        self.reporter:debug(
-            'attempt to connect remote before server has sent required information (`%s.%s`)',
+    self:_waitForRemoteSetup(
+        ('attempt to connect remote before server has sent required information (`%s.%s`)'):format(
             module,
             functionName
-        )
-        repeat
-            task.wait()
-        until self.remotesSetup
-        self.reporter:debug('remote setup completed, resuming `connectRemote` call')
-    end
+        ),
+        'connectRemote'
+    )
 
     self.reporter:assert(
         self.remotes[module] ~= nil,
@@ -133,6 +130,11 @@ end
 function ClientRemotes:fireReadyRemote()
     local self = self :: ClientRemotes & Private
 
+    self:_waitForRemoteSetup(
+        'attempt to send ready notification before receiving server information',
+        'fireReadyRemote'
+    )
+
     local remotes = self:_getRemotes()
     for _, remote in remotes:GetChildren() do
         if remote.Name:match('^[^ ]*    $') and remote:IsA('RemoteEvent') then
@@ -151,14 +153,14 @@ function ClientRemotes:_processServerInfo(data: RemoteInformation)
     self.currentKeys = data.Keys
     self.waitForKeyNames = data.WaitForKeyNames
 
-    for moduleName, functions in pairs(data.Names) do
+    for moduleName, functions in data.Names do
         self.remotes[moduleName] = {}
 
         if data.NameServerMap[moduleName] then
             self.serverModules[moduleName] = {}
             self.yieldNames[moduleName] = {}
 
-            for functionName, id in pairs(functions) do
+            for functionName, id in functions do
                 local remote = remoteFolder:WaitForChild(id) :: RemoteEvent | RemoteFunction
                 self.remotes[moduleName][functionName] = remote
 
@@ -170,7 +172,7 @@ function ClientRemotes:_processServerInfo(data: RemoteInformation)
                 )
             end
         else
-            for functionName, id in pairs(functions) do
+            for functionName, id in functions do
                 self.remotes[moduleName][functionName] =
                     remoteFolder:WaitForChild(id) :: RemoteEvent | RemoteFunction
             end
@@ -239,6 +241,18 @@ function ClientRemotes:_getRemotes(): Instance
     local self = self :: ClientRemotes & Private
 
     return self.remotesParent:WaitForChild('Remotes')
+end
+
+function ClientRemotes:_waitForRemoteSetup(initialLabel: string, callLabel: string)
+    local self = self :: ClientRemotes & Private
+
+    if not self.remotesSetup then
+        self.reporter:debug(initialLabel)
+        repeat
+            task.wait()
+        until self.remotesSetup
+        self.reporter:debug('remote setup completed, resuming `%s` call', callLabel)
+    end
 end
 
 function ClientRemotes.new(options: NewClientRemotesOptions): ClientRemotes
