@@ -34,11 +34,7 @@ return function()
                 Remotes = {
                     _children = {},
                     GetChildren = function(self)
-                        local children = {}
-                        for _, child in pairs(self._children) do
-                            table.insert(children, child)
-                        end
-                        return children
+                        return table.clone(self._children)
                     end,
                     WaitForChild = function(self, name)
                         return self._children[name]
@@ -53,6 +49,15 @@ return function()
 
     describe('fireReadyRemote', function()
         it('fires a remote ending with a special sequence', function()
+            local setupData = generateSetupData()
+
+            local getServerDataRemote = Mocks.RemoteFunction.new()
+            getServerDataRemote.Name = getServerDataRemoteName
+            getServerDataRemote.mocks.InvokeServer:setMockImplementation(function()
+                return setupData
+            end)
+            remotesParent._children.Remotes._children[getServerDataRemoteName] = getServerDataRemote
+
             local name = 'oof    '
             local remoteEventMock = Mocks.RemoteEvent.new()
             remoteEventMock.Name = name
@@ -60,8 +65,44 @@ return function()
             local remotes = ClientRemotes.new({
                 remotesParent = remotesParent,
             })
+
+            remotes:listen()
+
             remotes:fireReadyRemote()
             remoteEventMock.mocks.FireServer:expectCalledOnce(expect)
+        end)
+
+        it('blocks until remote setup is completed', function()
+            local setupData = generateSetupData()
+
+            local getServerDataRemote = Mocks.RemoteFunction.new()
+            getServerDataRemote.Name = getServerDataRemoteName
+            getServerDataRemote.mocks.InvokeServer:setMockImplementation(function()
+                task.wait()
+                return setupData
+            end)
+            remotesParent._children.Remotes._children[getServerDataRemoteName] = getServerDataRemote
+
+            local name = 'oof    '
+            local remoteEventMock = Mocks.RemoteEvent.new()
+            remoteEventMock.Name = name
+            remotesParent._children.Remotes._children[name] = remoteEventMock
+
+            local remotes = ClientRemotes.new({
+                remotesParent = remotesParent,
+            })
+
+            remotes:listen()
+
+            local fired = false
+            task.spawn(function()
+                remotes:fireReadyRemote()
+                fired = true
+            end)
+
+            expect(fired).to.equal(false)
+            task.wait()
+            expect(fired).to.equal(true)
         end)
     end)
 
