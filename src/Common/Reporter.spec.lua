@@ -26,9 +26,9 @@ return function()
         })
     end)
 
-    local logLevels = { 'error', 'warn', 'info', 'debug' }
+    local logLevels: { Reporter.LogLevel } = { 'error', 'warn', 'info', 'debug' }
 
-    for _, level in ipairs(logLevels) do
+    for _, level in logLevels do
         describe(level, function()
             local configName = 'on' .. level:sub(1, 1):upper() .. level:sub(2)
 
@@ -49,7 +49,7 @@ return function()
     end
 
     describe('fromLogLevel', function()
-        for _, level in ipairs(logLevels) do
+        for _, level: Reporter.LogLevel in logLevels do
             it(('creates a reporter from `%s`'):format(level), function()
                 local newReporter = Reporter.fromLogLevel(level)
                 expect(newReporter).to.be.ok()
@@ -58,7 +58,7 @@ return function()
 
         it('throws if not a valid reporter level', function()
             expect(function()
-                Reporter.fromLogLevel('oof')
+                Reporter.fromLogLevel('oof' :: any)
             end).to.throw(
                 'invalid value for `logError`: expected `error`, `warn`, `info` or `debug`'
             )

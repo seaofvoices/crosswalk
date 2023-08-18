@@ -21,7 +21,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify code format
-        run: stylua --check src .lune
+        run: stylua --check src .lune test-place
 
   selene-check:
     name: Selene analysis
@@ -48,5 +48,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Fetch Roblox types
+        run: curl https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.lua > globalTypes.d.lua
+
       - name: Run luau-lsp analysis
-        run: ./scripts/analyze.sh
+        run: luau-lsp analyze --base-luaurc=.luaurc --settings=.luau-analyze.json --definitions=globalTypes.d.lua --definitions=testezTypes.d.lua src

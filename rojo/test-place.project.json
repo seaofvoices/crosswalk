@@ -3,21 +3,26 @@
     "tree": {
         "$className": "DataModel",
         "HttpService": {
-            "$className": "HttpService",
             "$properties": {
                 "HttpEnabled": true
             }
         },
+        "Players": {
+            "$properties": {
+                "CharacterAutoLoads": false
+            }
+        },
         "ReplicatedFirst": {
-            "$className": "ReplicatedFirst",
             "ClientMain": {
                 "$path": "./client-main.project.json"
             }
         },
         "ReplicatedStorage": {
-            "$className": "ReplicatedStorage",
             "ClientLoader": {
-                "$path": "./client-loader.project.json"
+                "$path": "../src/ClientLoader"
+            },
+            "Common": {
+                "$path": "../src/Common"
             },
             "ClientModules": {
                 "$path": "../test-place/ClientModules"
@@ -30,18 +35,16 @@
             }
         },
         "ServerScriptService": {
-            "$className": "ServerScriptService",
             "Main": {
                 "$path": "./server-main.project.json"
             }
         },
         "ServerStorage": {
-            "$className": "ServerStorage",
             "ServerModules": {
                 "$path": "../test-place/ServerModules"
             },
             "ServerLoader": {
-                "$path": "./server-loader.project.json"
+                "$path": "../src/ServerLoader"
             }
         }
     }

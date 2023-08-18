@@ -1,95 +1,77 @@
---!nonstrict
 return function()
     local ClientModuleLoader = require('./ClientModuleLoader')
 
+    local ClientRemotes = require('./ClientRemotes')
+    type ClientRemotes = ClientRemotes.ClientRemotes
     local Mocks = require('../Common/TestUtils/Mocks')
     local ReporterBuilder = require('../Common/TestUtils/ReporterBuilder')
+    local createModuleScriptMock = require('../Common/TestUtils/createModuleScriptMock')
+    type ModuleScriptMock = createModuleScriptMock.ModuleScriptMock
+    local RequireMock = require('../Common/TestUtils/RequireMock')
+    type RequiredArgs = RequireMock.RequiredArgs
+    local createClientRemotesMock = require('../Common/TestUtils/createClientRemotesMock')
+    local createModuleLoaderTests = require('../Common/TestUtils/createModuleLoaderTests')
 
-    local moduleMocks = {}
-    local function requireMock(moduleScript)
-        return moduleMocks[moduleScript]
-    end
+    local requireMock = RequireMock.new()
 
-    local function createClientRemotesMock()
-        return {
-            _remotes = {},
-            _serverModules = {},
-            getServerModules = function(self)
-                return self._serverModules
-            end,
-            listen = Mocks.Function.new(),
-            disconnect = Mocks.Function.new(),
-            connectRemote = function(self, module, functionName, callback)
-                if self._remotes[module] == nil then
-                    self._remotes[module] = {
-                        [functionName] = callback,
-                    }
-                else
-                    self._remotes[module][functionName] = callback
-                end
-            end,
-            fireReadyRemote = Mocks.Function.new(),
-        }
-    end
+    beforeEach(function()
+        requireMock:reset()
+    end)
 
-    local function newModuleLoader(config)
-        config = config or {}
+    type NewModuleLoaderConfig = {
+        requireModule: ((ModuleScript, ...any) -> any)?,
+        shared: { ModuleScript }?,
+        client: { ModuleScript }?,
+        external: { [string]: any }?,
+        player: Player?,
+        clientRemotes: ClientRemotes?,
+        reporter: ReporterBuilder.Reporter?,
+        useRecursiveMode: boolean?,
+        services: any,
+    }
+    local function newModuleLoader(config: NewModuleLoaderConfig?)
+        local config: NewModuleLoaderConfig = config or {}
         return ClientModuleLoader.new({
             shared = config.shared or {},
             client = config.client or {},
             external = config.external or {},
             player = config.player or Mocks.Player.new(),
-            requireModule = requireMock,
+            requireModule = config.requireModule or requireMock.requireModule,
             clientRemotes = config.clientRemotes or createClientRemotesMock(),
             reporter = config.reporter,
+            useRecursiveMode = config.useRecursiveMode,
+            services = config.services,
         })
     end
 
-    local callEvents = {}
+    local noPlayerFunctions = {
+        OnPlayerReady = false,
+        OnPlayerLeaving = false,
+    }
 
-    local function getEventLogger(label)
-        return function(...)
-            table.insert(callEvents, {
-                label = label,
-                parameters = { ... },
+    describe(
+        'common',
+        createModuleLoaderTests('client', function(config)
+            return newModuleLoader({
+                requireModule = config.requireModule,
+                client = config.self,
+                shared = config.shared,
+                reporter = config.reporter,
+                useRecursiveMode = config.useRecursiveMode,
+                services = config.services,
             })
-        end
-    end
-
-    local MODULE_FUNCTIONS = { 'Init', 'Start', 'OnPlayerReady', 'OnPlayerLeaving' }
-
-    local function generateModule(moduleName, options)
-        options = options or {}
-        local newModule = {}
-        for _, functionName in ipairs(MODULE_FUNCTIONS) do
-            if options[functionName] == nil or options[functionName] then
-                newModule[functionName] = getEventLogger(('%s-%s'):format(moduleName, functionName))
-            end
-        end
-        return newModule
-    end
-
-    beforeEach(function()
-        callEvents = {}
-        moduleMocks = {}
-    end)
+        end)
+    )
 
     describe('loadModules', function()
-        local moduleA = { Name = 'A' }
-        local moduleB = { Name = 'B' }
-        local moduleC = { Name = 'C' }
+        local moduleA: ModuleScriptMock
+        local moduleB: ModuleScriptMock
+        local moduleC: ModuleScriptMock
 
         beforeEach(function()
-            moduleMocks = {
-                [moduleA] = generateModule('A', {
-                    OnPlayerReady = false,
-                    OnPlayerLeaving = false,
-                }),
-                [moduleB] = generateModule('B', {
-                    OnPlayerReady = false,
-                    OnPlayerLeaving = false,
-                }),
-            }
+            moduleA = requireMock:createModule('A', noPlayerFunctions)
+            moduleB = requireMock:createModule('B', noPlayerFunctions)
+            moduleC = requireMock:createModule('C', noPlayerFunctions)
         end)
 
         it('throws if a shared module name is used twice', function()
@@ -160,7 +142,7 @@ return function()
                 end)
 
                 it('warns if a shared module has a `OnPlayerReady` function', function()
-                    moduleMocks[moduleC] = generateModule('C', { OnPlayerLeaving = false })
+                    moduleC = requireMock:createModule('C', { OnPlayerLeaving = false })
                     local moduleLoader = newModuleLoader({
                         shared = { moduleC },
                         reporter = reporterMock,
@@ -177,7 +159,7 @@ return function()
                 end)
 
                 it('warns if a shared module has a `OnPlayerLeaving` function', function()
-                    moduleMocks[moduleC] = generateModule('C', { OnPlayerReady = false })
+                    moduleC = requireMock:createModule('C', { OnPlayerReady = false })
                     local moduleLoader = newModuleLoader({
                         shared = { moduleC },
                         reporter = reporterMock,
@@ -193,11 +175,9 @@ return function()
                 end)
 
                 it('warns if a shared module has a `OnUnapprovedExecution` function', function()
-                    moduleMocks[moduleC] = generateModule('C', {
-                        OnPlayerReady = false,
-                        OnPlayerLeaving = false,
-                    })
-                    moduleMocks[moduleC].OnUnapprovedExecution = function() end
+                    moduleC = requireMock:createModule('C', noPlayerFunctions)
+                    local moduleCImpl = requireMock:getContent(moduleC)
+                    moduleCImpl.OnUnapprovedExecution = function() end
                     local moduleLoader = newModuleLoader({
                         shared = { moduleC },
                         reporter = reporterMock,
@@ -221,11 +201,12 @@ return function()
             })
             moduleLoader:loadModules()
 
-            expect(#callEvents).to.equal(4)
-            expect(callEvents[1].label).to.equal('A-Init')
-            expect(callEvents[2].label).to.equal('B-Init')
-            expect(callEvents[3].label).to.equal('A-Start')
-            expect(callEvents[4].label).to.equal('B-Start')
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'B-Init',
+                'A-Start',
+                'B-Start',
+            })
         end)
 
         it("calls shared module's Init function first", function()
@@ -235,11 +216,12 @@ return function()
             })
             moduleLoader:loadModules()
 
-            expect(#callEvents).to.equal(4)
-            expect(callEvents[1].label).to.equal('A-Init')
-            expect(callEvents[2].label).to.equal('B-Init')
-            expect(callEvents[3].label).to.equal('A-Start')
-            expect(callEvents[4].label).to.equal('B-Start')
+            requireMock:expectEventLabels(expect, {
+                'A-Init',
+                'B-Init',
+                'A-Start',
+                'B-Start',
+            })
         end)
 
         it('errors if called twice', function()
@@ -249,6 +231,82 @@ return function()
             expect(function()
                 moduleLoader:loadModules()
             end).to.throw()
+        end)
+
+        describe('onPlayerReady', function()
+            local player = nil
+
+            beforeEach(function()
+                player = Mocks.Player.new()
+                moduleA = requireMock:createModule('A')
+                moduleB = requireMock:createModule('B')
+            end)
+
+            it('calls `OnPlayerReady` functions on client modules', function()
+                local moduleLoader = newModuleLoader({
+                    client = { moduleA },
+                    player = player,
+                })
+                moduleLoader:loadModules()
+
+                requireMock:expectEventLabels(expect, {
+                    'A-Init',
+                    'A-Start',
+                    'A-OnPlayerReady',
+                })
+
+                local onPlayerReadyParameters = requireMock:getEvent(3).parameters
+                expect(onPlayerReadyParameters.n).to.equal(1)
+                expect(onPlayerReadyParameters[1]).to.equal(player)
+            end)
+
+            it('calls `OnPlayerReady` functions on nested client modules', function()
+                moduleA.GetChildren:returnSameValue({ moduleB })
+
+                local moduleLoader = newModuleLoader({
+                    client = { moduleA },
+                    player = player,
+                    useRecursiveMode = true,
+                })
+                moduleLoader:loadModules()
+
+                requireMock:expectEventLabels(expect, {
+                    'A-Init',
+                    'B-Init',
+                    'A-Start',
+                    'B-Start',
+                    'A-OnPlayerReady',
+                    'B-OnPlayerReady',
+                })
+
+                for i = 5, 6 do
+                    local onPlayerLeavingParameters = requireMock:getEvent(i).parameters
+                    expect(onPlayerLeavingParameters.n).to.equal(1)
+                    expect(onPlayerLeavingParameters[1]).to.equal(player)
+                end
+            end)
+
+            it('does not call `OnPlayerReady` on shared modules', function()
+                local moduleLoader = newModuleLoader({
+                    shared = { moduleA },
+                    client = { moduleB },
+                    player = player,
+                    reporter = ReporterBuilder.new():build(),
+                })
+                moduleLoader:loadModules()
+
+                requireMock:expectEventLabels(expect, {
+                    'A-Init',
+                    'B-Init',
+                    'A-Start',
+                    'B-Start',
+                    'B-OnPlayerReady',
+                })
+
+                local onPlayerReadyParameters = requireMock:getEvent(5).parameters
+                expect(onPlayerReadyParameters.n).to.equal(1)
+                expect(onPlayerReadyParameters[1]).to.equal(player)
+            end)
         end)
     end)
 end

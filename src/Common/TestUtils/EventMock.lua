@@ -1,41 +1,58 @@
---!nonstrict
+export type EventMock = RBXScriptSignal & {
+    Fire: (self: EventMock, ...any) -> (),
+}
+
+type Private = {
+    connections: { [(...any) -> any]: true },
+}
+type EventMockStatic = EventMock & Private & {
+    new: () -> EventMock,
+}
+
+local EventMock: EventMockStatic = {} :: any
+local EventMockMetatable = {
+    __index = EventMock,
+}
+
+type ConnectionMock = {
+    _signal: (EventMock & Private)?,
+    _callback: ((...any) -> any)?,
+}
 local ConnectionMock = {}
 local ConnectionMockMetatable = { __index = ConnectionMock }
 
 function ConnectionMock:Disconnect()
-    assert(self.signal, 'cannot disconnect signal twice')
-    self.signal.connections[self.callback] = nil
-    self.signal = nil
-    self.callback = nil
+    local self = self :: ConnectionMock
+    assert(self._signal and self._callback, 'cannot disconnect signal twice')
+    self._signal.connections[self._callback] = nil
+    self._signal = nil
+    self._callback = nil
 end
 
-local function newConnectionMock(signal, callback)
+local function newConnectionMock(signal, callback: (...any) -> any): RBXScriptConnection
     return setmetatable({
-        signal = signal,
-        callback = callback,
-    }, ConnectionMockMetatable)
+        _signal = signal,
+        _callback = callback,
+    }, ConnectionMockMetatable) :: any
 end
 
-local EventMock = {}
-local EventMockMetatable = { __index = EventMock }
-
-function EventMock:Connect(callback)
+function EventMock:Connect(callback: (...any) -> any): RBXScriptConnection
+    local self = self :: EventMock & Private
     self.connections[callback] = true
     return newConnectionMock(self, callback)
 end
 
-function EventMock:Fire(...)
+function EventMock:Fire(...: any)
+    local self = self :: EventMock & Private
     for callback in pairs(self.connections) do
         callback(...)
     end
 end
 
-local function new()
+function EventMock.new(): EventMock
     return setmetatable({
         connections = {},
-    }, EventMockMetatable)
+    }, EventMockMetatable) :: any
 end
 
-return {
-    new = new,
-}
+return EventMock

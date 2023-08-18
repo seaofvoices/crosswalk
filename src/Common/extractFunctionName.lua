@@ -1,5 +1,5 @@
-local function extractFunctionName(name)
-    return name:match('^(.-)_')
+local function extractFunctionName(name: string): string
+    return name:match('^(.-)_') or name
 end
 
 return extractFunctionName

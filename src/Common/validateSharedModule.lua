@@ -1,12 +1,18 @@
---!nonstrict
 local SpecialFunctions = require('./SpecialFunctions')
 local extractFunctionName = require('./extractFunctionName')
+
+local Reporter = require('./Reporter')
+type Reporter = Reporter.Reporter
 
 local EVENT_PATTERN = '_event$'
 local FUNCTION_PATTERN = '_func$'
 
-local function validateSharedModule(sharedModule, moduleName, reporter)
-    for property, value in pairs(sharedModule) do
+local function validateSharedModule(
+    sharedModule: { [any]: any },
+    moduleName: string,
+    reporter: Reporter
+)
+    for property, value in sharedModule do
         if
             (property:match(EVENT_PATTERN) or property:match(FUNCTION_PATTERN))
             and typeof(value) == 'function'
@@ -36,7 +42,7 @@ local function validateSharedModule(sharedModule, moduleName, reporter)
             if #destination == 1 then
                 messageEnd = ' into ' .. destination[1]
             elseif #destination > 1 then
-                local last = table.remove(destination)
+                local last = table.remove(destination) :: string
                 messageEnd = (' into %s or %s'):format(table.concat(destination, ', '), last)
             end
 

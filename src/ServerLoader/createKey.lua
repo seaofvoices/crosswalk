@@ -1,6 +1,6 @@
 local HttpService = game:GetService('HttpService')
 
-local function createKey()
+local function createKey(): string
     return HttpService:GenerateGUID()
 end
 
