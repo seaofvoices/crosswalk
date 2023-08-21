@@ -106,7 +106,7 @@ return function(Modules, ClientModules, Services)
         ClientModules.ClientTest.PrintToClient(player, player, 'hello!')
         print('\n')
 
-        print('Ask client to trigger unapproved rquest', player)
+        print('Ask client to trigger unapproved request', player)
         ClientModules.ClientTest.AskTriggerUnapproved(player, player, 'hello!')
         print('\n')
 
