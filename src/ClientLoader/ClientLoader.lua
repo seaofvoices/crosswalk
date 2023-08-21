@@ -27,6 +27,8 @@ type ClientLoaderConfiguration = {
     externalModules: { [string]: any }?,
     clientModuleLoader: ClientModuleLoader?,
     logLevel: LogLevel?,
+    customModuleFilter: ((ModuleScript) -> boolean)?,
+    excludeModuleFilter: ((ModuleScript) -> boolean)?,
     reporter: Reporter?,
     player: Player?,
     services: Services?,
@@ -73,6 +75,8 @@ function ClientLoader.new(configuration: ClientLoaderConfiguration): ClientLoade
             reporter = reporter,
             services = configuration.services or ClientServices,
             clientRemotes = clientRemotes,
+            customModuleFilter = configuration.customModuleFilter,
+            excludeModuleFilter = configuration.excludeModuleFilter,
             useRecursiveMode = configuration.useRecursiveMode,
         })
 

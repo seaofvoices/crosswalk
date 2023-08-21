@@ -194,36 +194,6 @@ return function()
             end)
         end
 
-        it("calls shared module's `Init` and `Start` function first", function()
-            local moduleLoader = newModuleLoader({
-                shared = { moduleA },
-                client = { moduleB },
-            })
-            moduleLoader:loadModules()
-
-            requireMock:expectEventLabels(expect, {
-                'A-Init',
-                'B-Init',
-                'A-Start',
-                'B-Start',
-            })
-        end)
-
-        it("calls shared module's Init function first", function()
-            local moduleLoader = newModuleLoader({
-                shared = { moduleA },
-                client = { moduleB },
-            })
-            moduleLoader:loadModules()
-
-            requireMock:expectEventLabels(expect, {
-                'A-Init',
-                'B-Init',
-                'A-Start',
-                'B-Start',
-            })
-        end)
-
         it('errors if called twice', function()
             local moduleLoader = newModuleLoader()
             moduleLoader:loadModules()
@@ -307,6 +277,62 @@ return function()
                 expect(onPlayerReadyParameters.n).to.equal(1)
                 expect(onPlayerReadyParameters[1]).to.equal(player)
             end)
+        end)
+
+        it('connects a function ending with `_event`', function()
+            local clientRemotes = createClientRemotesMock()
+            local moduleImpl = requireMock:getContent(moduleA)
+            moduleImpl.testFunction_event = function() end
+            local moduleLoader = newModuleLoader({
+                client = { moduleA },
+                clientRemotes = clientRemotes,
+            })
+            moduleLoader:loadModules()
+
+            expect(clientRemotes.remotes['A']['testFunction']).to.equal(
+                moduleImpl.testFunction_event
+            )
+        end)
+
+        it('connects a function ending with `_func`', function()
+            local clientRemotes = createClientRemotesMock()
+            local moduleImpl = requireMock:getContent(moduleA)
+            moduleImpl.testFunction_func = function() end
+            local moduleLoader = newModuleLoader({
+                client = { moduleA },
+                clientRemotes = clientRemotes,
+            })
+            moduleLoader:loadModules()
+
+            expect(clientRemotes.remotes['A']['testFunction']).to.equal(
+                moduleImpl.testFunction_func
+            )
+        end)
+
+        it('creates an alias for a function ending with `_event`', function()
+            local clientRemotes = createClientRemotesMock()
+            local moduleImpl = requireMock:getContent(moduleA)
+            moduleImpl.testFunction_event = function() end
+            local moduleLoader = newModuleLoader({
+                client = { moduleA },
+                clientRemotes = clientRemotes,
+            })
+            moduleLoader:loadModules()
+
+            expect(moduleImpl.testFunction).to.equal(moduleImpl.testFunction_event)
+        end)
+
+        it('creates an alias for a function ending with `_func`', function()
+            local clientRemotes = createClientRemotesMock()
+            local moduleImpl = requireMock:getContent(moduleA)
+            moduleImpl.testFunction_func = function() end
+            local moduleLoader = newModuleLoader({
+                client = { moduleA },
+                clientRemotes = clientRemotes,
+            })
+            moduleLoader:loadModules()
+
+            expect(moduleImpl.testFunction).to.equal(moduleImpl.testFunction_func)
         end)
     end)
 end

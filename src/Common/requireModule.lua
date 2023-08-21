@@ -4,6 +4,12 @@ export type CrosswalkModule = {
     OnPlayerReady: ((Player) -> ())?,
     OnPlayerLeaving: ((Player) -> ())?,
 }
+export type LoadedModuleInfo = {
+    module: CrosswalkModule,
+    moduleScript: ModuleScript,
+    name: string,
+    orders: { number },
+}
 
 local function requireModule<T...>(moduleScript: ModuleScript, ...: T...): CrosswalkModule
     local success, moduleLoader = pcall(require, moduleScript)

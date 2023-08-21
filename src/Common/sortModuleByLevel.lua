@@ -1,4 +1,4 @@
-type ModuleInfo = { module: any, orders: { number } }
+type ModuleInfo = { [string]: any, orders: { number } }
 
 local function sortByLevel(moduleA: ModuleInfo, moduleB: ModuleInfo): boolean
     local aLength = #moduleA.orders
@@ -15,16 +15,8 @@ local function sortByLevel(moduleA: ModuleInfo, moduleB: ModuleInfo): boolean
     return aLength < bLength
 end
 
-local function sortModuleByLevel(modules: { ModuleInfo }): { any }
+local function sortModuleByLevel(modules: { ModuleInfo })
     table.sort(modules, sortByLevel)
-
-    local actualModules = {}
-
-    for _, moduleData in modules do
-        table.insert(actualModules, moduleData.module)
-    end
-
-    return actualModules
 end
 
 return sortModuleByLevel

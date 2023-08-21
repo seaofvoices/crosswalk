@@ -2,11 +2,13 @@ local ClientServices = require('./ClientServices')
 type Services = ClientServices.Services
 local requireModule = require('../Common/requireModule')
 type CrosswalkModule = requireModule.CrosswalkModule
+type LoadedModuleInfo = requireModule.LoadedModuleInfo
 local Reporter = require('../Common/Reporter')
 type Reporter = Reporter.Reporter
-local loadNestedModules = require('../Common/loadNestedModules')
-local sortModuleByLevel = require('../Common/sortModuleByLevel')
+local loadModules = require('../Common/loadModules')
 local validateSharedModule = require('../Common/validateSharedModule')
+local defaultCustomModuleFilter = require('../Common/defaultCustomModuleFilter')
+local defaultExcludeModuleFilter = require('../Common/defaultExcludeModuleFilter')
 local ClientRemotes = require('./ClientRemotes')
 type ClientRemotes = ClientRemotes.ClientRemotes
 
@@ -29,9 +31,11 @@ type Private = {
     _reporter: Reporter,
     _requireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
     _services: Services,
+    _customModuleFilter: (ModuleScript) -> boolean,
+    _excludeModuleFilter: (ModuleScript) -> boolean,
 
-    _loadSharedModules: (self: ClientModuleLoader) -> { CrosswalkModule },
-    _loadClientModules: (self: ClientModuleLoader) -> { CrosswalkModule },
+    _loadSharedModules: (self: ClientModuleLoader) -> { LoadedModuleInfo },
+    _loadClientModules: (self: ClientModuleLoader) -> { LoadedModuleInfo },
     _verifyClientModuleName: (
         self: ClientModuleLoader,
         moduleName: string,
@@ -57,6 +61,8 @@ type NewClientModuleLoaderOptions = {
     requireModule: <T...>(moduleScript: ModuleScript, T...) -> ()?,
     services: Services?,
     useRecursiveMode: boolean?,
+    customModuleFilter: ((ModuleScript) -> boolean)?,
+    excludeModuleFilter: ((ModuleScript) -> boolean)?,
 }
 
 type ClientModuleLoaderStatic = ClientModuleLoader & Private & {
@@ -87,105 +93,90 @@ function ClientModuleLoader:loadModules()
     self._reporter:debug('loading shared modules')
     local onlySharedModules = self:_loadSharedModules()
 
+    local setupSharedModules = {}
+    for _, moduleInfo in onlySharedModules do
+        if not self._customModuleFilter(moduleInfo.moduleScript) then
+            table.insert(setupSharedModules, moduleInfo)
+        end
+    end
+
     self._reporter:debug('loading client modules')
     local onlyClientModules = self:_loadClientModules()
 
-    self._reporter:debug('calling `Init` for shared modules')
-    for _, module in onlySharedModules do
-        if module.Init then
-            module.Init()
+    local setupClientModules = {}
+    for _, moduleInfo in onlyClientModules do
+        if not self._customModuleFilter(moduleInfo.moduleScript) then
+            table.insert(setupClientModules, moduleInfo)
         end
     end
 
-    self._reporter:debug('calling `Init` for client modules')
-    for _, module in onlyClientModules do
-        if module.Init then
-            module.Init()
+    self._reporter:info('calling `Init` for shared modules')
+    for _, moduleInfo in setupSharedModules do
+        if moduleInfo.module.Init then
+            self._reporter:info('calling `Init` on `%s`', moduleInfo.name)
+            moduleInfo.module.Init()
         end
     end
 
-    self._reporter:debug('calling `Start` for shared modules')
-    for _, module in onlySharedModules do
-        if module.Start then
-            module.Start()
+    self._reporter:info('calling `Init` for client modules')
+    for _, moduleInfo in setupClientModules do
+        if moduleInfo.module.Init then
+            self._reporter:info('calling `Init` on `%s`', moduleInfo.name)
+            moduleInfo.module.Init()
         end
     end
 
-    self._reporter:debug('calling `Start` for client modules')
-    for _, module in onlyClientModules do
-        if module.Start then
-            module.Start()
+    self._reporter:info('calling `Start` for shared modules')
+    for _, moduleInfo in onlySharedModules do
+        if moduleInfo.module.Start then
+            self._reporter:info('calling `Start` on `%s`', moduleInfo.name)
+            moduleInfo.module.Start()
+        end
+    end
+
+    self._reporter:info('calling `Start` for client modules')
+    for _, moduleInfo in onlyClientModules do
+        if moduleInfo.module.Start then
+            self._reporter:info('calling `Start` on `%s`', moduleInfo.name)
+            moduleInfo.module.Start()
         end
     end
 
     self._clientRemotes:fireReadyRemote()
 
-    self._reporter:debug('calling `OnPlayerReady` for client modules')
-    for _, module in onlyClientModules do
-        if module.OnPlayerReady then
-            task.spawn(module.OnPlayerReady, self._player)
+    self._reporter:info('calling `OnPlayerReady` for client modules')
+    for _, moduleInfo in onlyClientModules do
+        if moduleInfo.module.OnPlayerReady then
+            self._reporter:info('calling `OnPlayerReady` on `%s`', moduleInfo.name)
+            task.spawn(moduleInfo.module.OnPlayerReady, self._player)
         end
     end
 
     self._hasLoaded = true
 end
 
-function ClientModuleLoader:_loadSharedModules(): { CrosswalkModule }
+function ClientModuleLoader:_loadSharedModules(): { LoadedModuleInfo }
     local self = self :: ClientModuleLoader & Private
 
-    local sharedModules = {}
-    for siblingOrder, moduleScript in self._sharedScripts do
-        local moduleName = moduleScript.Name
-        self._reporter:debug('loading shared module `%s`', moduleName)
-
-        self:_verifySharedModuleName(moduleName, self._shared)
-
-        local localSharedModules = nil
-        if self._useRecursiveMode then
-            localSharedModules = {}
-            self._localModules[moduleScript] = localSharedModules
-        else
-            localSharedModules = self._shared
-        end
-
-        local module = self._requireModule(moduleScript, localSharedModules, self._services, false)
-
-        if _G.DEV then
-            validateSharedModule(module, moduleName, self._reporter)
-        end
-
-        self._shared[moduleName] = module
-        self._client[moduleName] = module
-
-        table.insert(sharedModules, {
-            module = module,
-            orders = { siblingOrder },
-        })
-    end
-
-    if self._useRecursiveMode then
-        for siblingOrder, moduleScript in self._sharedScripts do
-            local localSharedModules = self._localModules[moduleScript]
-
-            for name, content in self._shared do
-                localSharedModules[name] = content
+    return loadModules(self._sharedScripts, {
+        reporter = self._reporter,
+        verifyName = function(subModuleName, localModules)
+            self:_verifySharedModuleName(subModuleName, localModules)
+        end,
+        excludeModuleFilter = self._excludeModuleFilter,
+        localModulesMap = self._localModules,
+        requireModule = self._requireModule,
+        useRecursiveMode = self._useRecursiveMode,
+        moduleKind = 'shared',
+        rootModulesMap = self._shared,
+        onRootLoaded = function(moduleInfo)
+            if _G.DEV and not self._customModuleFilter(moduleInfo.moduleScript) then
+                validateSharedModule(moduleInfo.module, moduleInfo.name, self._reporter)
             end
 
-            local nestedModules = loadNestedModules({
-                module = moduleScript,
-                reporter = self._reporter,
-                requireModule = self._requireModule,
-                localModulesMap = self._localModules,
-                orders = { siblingOrder },
-                verifyName = function(subModuleName, localModules)
-                    self:_verifySharedModuleName(subModuleName, localModules)
-                end,
-            }, self._services, false)
-            table.move(nestedModules, 1, #nestedModules, #sharedModules + 1, sharedModules)
-        end
-    end
-
-    return sortModuleByLevel(sharedModules)
+            self._client[moduleInfo.name] = moduleInfo.module
+        end,
+    }, self._services, false)
 end
 
 function ClientModuleLoader:_verifySharedModuleName(
@@ -207,84 +198,55 @@ function ClientModuleLoader:_verifySharedModuleName(
     )
 end
 
-function ClientModuleLoader:_loadClientModules(): { CrosswalkModule }
+function ClientModuleLoader:_loadClientModules(): { LoadedModuleInfo }
     local self = self :: ClientModuleLoader & Private
 
-    local clientModules = {}
     local serverModules = self._clientRemotes:getServerModules()
 
-    for siblingOrder, moduleScript in self._clientScripts do
-        local moduleName = moduleScript.Name
-        self._reporter:debug('loading client module `%s`', moduleName)
-
-        self:_verifyClientModuleName(moduleName, self._client)
-
-        local localClientModules = nil
-        if self._useRecursiveMode then
-            localClientModules = table.clone(self._shared)
-            self._localModules[moduleScript] = localClientModules
-        else
-            localClientModules = self._client
-        end
-
-        local api = {}
-        local module =
-            self._requireModule(moduleScript, localClientModules, serverModules, self._services)
-
-        for functionName, callback in pairs(module) do
-            if type(callback) == 'function' then
-                local name = nil
-                if functionName:match(EVENT_PATTERN) then
-                    name = functionName:match('(.+)_event$')
-                elseif functionName:match(FUNCTION_PATTERN) then
-                    name = functionName:match('(.+)_func$')
-                end
-
-                if name then
-                    -- name collisions validation is done in the server ModuleLoader
-                    api[name] = callback
-                    self._clientRemotes:connectRemote(moduleName, name, callback)
-                end
+    return loadModules(self._clientScripts, {
+        reporter = self._reporter,
+        verifyName = function(subModuleName, localModules)
+            self:_verifyClientModuleName(subModuleName, localModules)
+        end,
+        excludeModuleFilter = self._excludeModuleFilter,
+        localModulesMap = self._localModules,
+        baseModules = self._shared,
+        requireModule = self._requireModule,
+        useRecursiveMode = self._useRecursiveMode,
+        moduleKind = 'client',
+        rootModulesMap = self._client,
+        onRootLoaded = function(moduleInfo)
+            if self._customModuleFilter(moduleInfo.moduleScript) then
+                self._reporter:debug("skip client module setup for `%s`", moduleInfo.name)
+                return
             end
-        end
 
-        for name, newFunction in api do
-            module[name] = newFunction
-        end
+            local module = moduleInfo.module
+            local moduleName = moduleInfo.name
 
-        self._client[moduleName] = module
-        table.insert(clientModules, {
-            module = module,
-            orders = { siblingOrder },
-        })
-    end
+            local api = {}
+            for functionName, callback in pairs(module) do
+                if type(callback) == 'function' then
+                    local name = nil
+                    if functionName:match(EVENT_PATTERN) then
+                        name = functionName:match('(.+)_event$')
+                    elseif functionName:match(FUNCTION_PATTERN) then
+                        name = functionName:match('(.+)_func$')
+                    end
 
-    if self._useRecursiveMode then
-        for siblingOrder, moduleScript in self._clientScripts do
-            local localClientModules = self._localModules[moduleScript]
-
-            for name, content in self._client do
-                if self._shared[name] == nil then
-                    localClientModules[name] = content
+                    if name then
+                        -- name collisions validation is done in the server ModuleLoader
+                        api[name] = callback
+                        self._clientRemotes:connectRemote(moduleName, name, callback)
+                    end
                 end
             end
 
-            local nestedModules = loadNestedModules({
-                module = moduleScript,
-                reporter = self._reporter,
-                requireModule = self._requireModule,
-                localModulesMap = self._localModules,
-                baseModules = self._shared,
-                orders = { siblingOrder },
-                verifyName = function(subModuleName, localModules)
-                    self:_verifyClientModuleName(subModuleName, localModules)
-                end,
-            }, serverModules, self._services)
-            table.move(nestedModules, 1, #nestedModules, #clientModules + 1, clientModules)
-        end
-    end
-
-    return sortModuleByLevel(clientModules)
+            for name, newFunction in api do
+                module[name] = newFunction
+            end
+        end,
+    }, serverModules, self._services)
 end
 
 function ClientModuleLoader:_verifyClientModuleName(
@@ -322,6 +284,8 @@ function ClientModuleLoader.new(options: NewClientModuleLoaderOptions): ClientMo
         _player = options.player,
         _clientRemotes = options.clientRemotes,
         _requireModule = options.requireModule or requireModule,
+        _customModuleFilter = options.customModuleFilter or defaultCustomModuleFilter,
+        _excludeModuleFilter = options.excludeModuleFilter or defaultExcludeModuleFilter,
         _reporter = options.reporter or Reporter.default(),
         _services = options.services or ClientServices,
         _useRecursiveMode = if options.useRecursiveMode == nil
