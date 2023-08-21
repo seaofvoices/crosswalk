@@ -217,7 +217,7 @@ function ClientModuleLoader:_loadClientModules(): { LoadedModuleInfo }
         rootModulesMap = self._client,
         onRootLoaded = function(moduleInfo)
             if self._customModuleFilter(moduleInfo.moduleScript) then
-                self._reporter:debug("skip client module setup for `%s`", moduleInfo.name)
+                self._reporter:debug('skip client module setup for `%s`', moduleInfo.name)
                 return
             end
 
