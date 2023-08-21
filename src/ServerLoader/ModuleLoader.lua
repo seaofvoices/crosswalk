@@ -10,6 +10,7 @@ local validateSharedModule = require('../Common/validateSharedModule')
 local extractFunctionName = require('../Common/extractFunctionName')
 local defaultCustomModuleFilter = require('../Common/defaultCustomModuleFilter')
 local defaultExcludeModuleFilter = require('../Common/defaultExcludeModuleFilter')
+local filterArray = require('../Common/filterArray')
 local ServerRemotes = require('./ServerRemotes')
 type ServerRemotes = ServerRemotes.ServerRemotes
 
@@ -72,9 +73,9 @@ type Private = {
 }
 
 export type NewModuleLoaderOptions = {
-    server: { ModuleScript },
-    client: { ModuleScript },
-    shared: { ModuleScript },
+    server: { Instance },
+    client: { Instance },
+    shared: { Instance },
     external: { [string]: any }?,
     serverRemotes: ServerRemotes,
     reporter: Reporter?,
@@ -111,22 +112,16 @@ function ModuleLoader:loadModules()
     self._reporter:debug('loading shared modules')
     local onlyShared = self:_loadSharedModules()
 
-    local setupSharedModules = {}
-    for _, moduleInfo in onlyShared do
-        if not self._customModuleFilter(moduleInfo.moduleScript) then
-            table.insert(setupSharedModules, moduleInfo)
-        end
+    local function removeCustomModuleFilter(moduleInfo: LoadedModuleInfo): boolean
+        return not self._customModuleFilter(moduleInfo.moduleScript)
     end
+
+    local setupSharedModules = filterArray(onlyShared, removeCustomModuleFilter)
 
     self._reporter:debug('loading server modules')
     local onlyServer = self:_loadServerModules()
 
-    local setupServerModules = {}
-    for _, moduleInfo in onlyServer do
-        if not self._customModuleFilter(moduleInfo.moduleScript) then
-            table.insert(setupServerModules, moduleInfo)
-        end
-    end
+    local setupServerModules = filterArray(onlyServer, removeCustomModuleFilter)
     self._onlyServer = setupServerModules
 
     self._reporter:info('calling `Init` for shared modules')

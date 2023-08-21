@@ -9,6 +9,7 @@ local loadModules = require('../Common/loadModules')
 local validateSharedModule = require('../Common/validateSharedModule')
 local defaultCustomModuleFilter = require('../Common/defaultCustomModuleFilter')
 local defaultExcludeModuleFilter = require('../Common/defaultExcludeModuleFilter')
+local filterArray = require('../Common/filterArray')
 local ClientRemotes = require('./ClientRemotes')
 type ClientRemotes = ClientRemotes.ClientRemotes
 
@@ -93,22 +94,16 @@ function ClientModuleLoader:loadModules()
     self._reporter:debug('loading shared modules')
     local onlySharedModules = self:_loadSharedModules()
 
-    local setupSharedModules = {}
-    for _, moduleInfo in onlySharedModules do
-        if not self._customModuleFilter(moduleInfo.moduleScript) then
-            table.insert(setupSharedModules, moduleInfo)
-        end
+    local function removeCustomModuleFilter(moduleInfo: LoadedModuleInfo): boolean
+        return not self._customModuleFilter(moduleInfo.moduleScript)
     end
+
+    local setupSharedModules = filterArray(onlySharedModules, removeCustomModuleFilter)
 
     self._reporter:debug('loading client modules')
     local onlyClientModules = self:_loadClientModules()
 
-    local setupClientModules = {}
-    for _, moduleInfo in onlyClientModules do
-        if not self._customModuleFilter(moduleInfo.moduleScript) then
-            table.insert(setupClientModules, moduleInfo)
-        end
-    end
+    local setupClientModules = filterArray(onlyClientModules, removeCustomModuleFilter)
 
     self._reporter:info('calling `Init` for shared modules')
     for _, moduleInfo in setupSharedModules do
