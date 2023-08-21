@@ -19,8 +19,12 @@ extra_css:
 
 markdown_extensions:
   - admonition
-  - pymdownx.superfences
-  - pymdownx.tabbed
+  - pymdownx.striphtml
+  - pymdownx.details
+  - pymdownx.superfences:
+      preserve_tabs: true
+  - pymdownx.tabbed:
+      alternate_style: true
   - codehilite:
       guess_lang: false
   - toc:

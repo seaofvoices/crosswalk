@@ -27,7 +27,7 @@ local function validateSharedModule(
         end
     end
 
-    for functionName, info in pairs(SpecialFunctions) do
+    for functionName, info in SpecialFunctions do
         if sharedModule[functionName] then
             local destination = {}
             if info.server then
