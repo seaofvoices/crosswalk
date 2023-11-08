@@ -14,6 +14,7 @@ local Services = require('./Services')
 type Services = Services.Services
 
 local Reporter = require('../Common/Reporter')
+local filterArray = require('../Common/filterArray')
 
 local DEFAULT_REMOTE_CALL_MAX_DELAY = 2
 
@@ -36,9 +37,9 @@ type Private = {
 }
 
 export type ServerLoaderConfiguration = {
-    sharedModules: { ModuleScript },
-    serverModules: { ModuleScript },
-    clientModules: { ModuleScript },
+    sharedModules: { Instance },
+    serverModules: { Instance },
+    clientModules: { Instance },
     externalModules: { [string]: any },
     logLevel: Reporter.LogLevel?,
     reporter: Reporter.Reporter?,
@@ -54,6 +55,10 @@ export type ServerLoaderConfiguration = {
 type ServerLoaderStatic = ServerLoader & Private & {
     new: (configuration: ServerLoaderConfiguration) -> ServerLoader,
 }
+
+local function filterModuleScripts(instance: Instance): boolean
+    return instance:IsA('ModuleScript')
+end
 
 local ServerLoader: ServerLoaderStatic = {} :: any
 local ServerLoaderMetatable = {
@@ -92,9 +97,9 @@ function ServerLoader.new(configuration): ServerLoader
 
     local moduleLoader = configuration.moduleLoader
         or ModuleLoader.new({
-            shared = configuration.sharedModules,
-            server = configuration.serverModules,
-            client = configuration.clientModules,
+            shared = filterArray(configuration.sharedModules, filterModuleScripts),
+            server = filterArray(configuration.serverModules, filterModuleScripts),
+            client = filterArray(configuration.clientModules, filterModuleScripts),
             external = configuration.externalModules,
             serverRemotes = serverRemotes,
             reporter = reporter,

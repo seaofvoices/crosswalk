@@ -33,9 +33,9 @@ return function()
     local function newModuleLoader(config: NewModuleLoaderConfig?): ModuleLoader
         local config: NewModuleLoaderConfig = config or {}
         return ModuleLoader.new({
-            shared = config.shared or {},
-            server = config.server or {},
-            client = config.client or {},
+            shared = config.shared or {} :: any,
+            server = config.server or {} :: any,
+            client = config.client or {} :: any,
             external = config.external or {},
             requireModule = config.requireModule or requireMock.requireModule,
             serverRemotes = config.serverRemotes or createServerRemotesMock(),

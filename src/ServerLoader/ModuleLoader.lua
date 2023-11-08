@@ -4,10 +4,13 @@ local Reporter = require('../Common/Reporter')
 type Reporter = Reporter.Reporter
 local requireModule = require('../Common/requireModule')
 type CrosswalkModule = requireModule.CrosswalkModule
-local loadNestedModules = require('../Common/loadNestedModules')
+type LoadedModuleInfo = requireModule.LoadedModuleInfo
+local loadModules = require('../Common/loadModules')
 local validateSharedModule = require('../Common/validateSharedModule')
 local extractFunctionName = require('../Common/extractFunctionName')
-local sortModuleByLevel = require('../Common/sortModuleByLevel')
+local defaultCustomModuleFilter = require('../Common/defaultCustomModuleFilter')
+local defaultExcludeModuleFilter = require('../Common/defaultExcludeModuleFilter')
+local filterArray = require('../Common/filterArray')
 local ServerRemotes = require('./ServerRemotes')
 type ServerRemotes = ServerRemotes.ServerRemotes
 
@@ -35,14 +38,15 @@ type Private = {
     _external: { [string]: any },
     _ranOnPlayerReady: { [Player]: true },
     _shared: { [string]: any },
-    _onlyShared: { CrosswalkModule },
     _server: { [string]: any },
-    _onlyServer: { CrosswalkModule },
+    _onlyServer: { LoadedModuleInfo },
     _client: { [string]: any },
     _serverRemotes: ServerRemotes,
     _reporter: Reporter.Reporter,
     _requireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
     _services: Services.Services,
+    _customModuleFilter: (ModuleScript) -> boolean,
+    _excludeModuleFilter: (ModuleScript) -> boolean,
 
     _useRecursiveMode: boolean,
     _localModules: { [ModuleScript]: { [string]: any } },
@@ -58,8 +62,8 @@ type Private = {
         localModules: { [string]: any }
     ) -> (),
 
-    _loadSharedModules: (self: ModuleLoader) -> { CrosswalkModule },
-    _loadServerModules: (self: ModuleLoader) -> { CrosswalkModule },
+    _loadSharedModules: (self: ModuleLoader) -> { LoadedModuleInfo },
+    _loadServerModules: (self: ModuleLoader) -> { LoadedModuleInfo },
     _setupClientRemotes: (self: ModuleLoader) -> (),
     _validateReturnedValues: (
         self: ModuleLoader,
@@ -69,15 +73,17 @@ type Private = {
 }
 
 export type NewModuleLoaderOptions = {
-    server: { ModuleScript },
-    client: { ModuleScript },
-    shared: { ModuleScript },
+    server: { Instance },
+    client: { Instance },
+    shared: { Instance },
     external: { [string]: any }?,
     serverRemotes: ServerRemotes,
     reporter: Reporter?,
     requireModule: <T...>(moduleScript: ModuleScript, T...) -> ()?,
     services: Services.Services?,
     useRecursiveMode: boolean?,
+    customModuleFilter: ((ModuleScript) -> boolean)?,
+    excludeModuleFilter: ((ModuleScript) -> boolean)?,
 }
 
 type ModuleLoaderStatic = ModuleLoader & Private & {
@@ -104,102 +110,80 @@ function ModuleLoader:loadModules()
     end
 
     self._reporter:debug('loading shared modules')
-    self._onlyShared = self:_loadSharedModules()
+    local onlyShared = self:_loadSharedModules()
+
+    local function removeCustomModuleFilter(moduleInfo: LoadedModuleInfo): boolean
+        return not self._customModuleFilter(moduleInfo.moduleScript)
+    end
+
+    local setupSharedModules = filterArray(onlyShared, removeCustomModuleFilter)
 
     self._reporter:debug('loading server modules')
-    self._onlyServer = self:_loadServerModules()
+    local onlyServer = self:_loadServerModules()
 
-    self._reporter:debug('calling `Init` for shared modules')
-    for _, module in self._onlyShared do
-        if module.Init then
-            module.Init()
+    local setupServerModules = filterArray(onlyServer, removeCustomModuleFilter)
+    self._onlyServer = setupServerModules
+
+    self._reporter:info('calling `Init` for shared modules')
+    for _, moduleInfo in setupSharedModules do
+        if moduleInfo.module.Init then
+            self._reporter:debug('calling `Init` on `%s`', moduleInfo.name)
+            moduleInfo.module.Init()
         end
     end
 
-    self._reporter:debug('calling `Init` for server modules')
-    for _, module in self._onlyServer do
-        if module.Init then
-            module.Init()
+    self._reporter:info('calling `Init` for server modules')
+    for _, moduleInfo in setupServerModules do
+        if moduleInfo.module.Init then
+            self._reporter:debug('calling `Init` on `%s`', moduleInfo.name)
+            moduleInfo.module.Init()
         end
     end
 
     self._reporter:debug('setup remotes for client modules')
     self:_setupClientRemotes()
 
-    self._reporter:debug('calling `Start` for shared modules')
-    for _, module in self._onlyShared do
-        if module.Start then
-            module.Start()
+    self._reporter:info('calling `Start` for shared modules')
+    for _, moduleInfo in setupSharedModules do
+        if moduleInfo.module.Start then
+            self._reporter:debug('calling `Start` on `%s`', moduleInfo.name)
+            moduleInfo.module.Start()
         end
     end
 
-    self._reporter:debug('calling `Start` for server modules')
-    for _, module in self._onlyServer do
-        if module.Start then
-            module.Start()
+    self._reporter:info('calling `Start` for server modules')
+    for _, moduleInfo in setupServerModules do
+        if moduleInfo.module.Start then
+            self._reporter:debug('calling `Start` on `%s`', moduleInfo.name)
+            moduleInfo.module.Start()
         end
     end
 
     self._hasLoaded = true
 end
 
-function ModuleLoader:_loadSharedModules(): { CrosswalkModule }
+function ModuleLoader:_loadSharedModules(): { LoadedModuleInfo }
     local self = self :: ModuleLoader & Private
 
-    local sharedModules = {}
-
-    for siblingOrder, moduleScript in self._sharedScripts do
-        local moduleName = moduleScript.Name
-        self._reporter:debug('loading shared module `%s`', moduleName)
-
-        self:_verifySharedModuleName(moduleName, self._shared)
-
-        local localSharedModules = nil
-        if self._useRecursiveMode then
-            localSharedModules = {}
-            self._localModules[moduleScript] = localSharedModules
-        else
-            localSharedModules = self._shared
-        end
-
-        local module = self._requireModule(moduleScript, localSharedModules, self._services, true)
-
-        if _G.DEV then
-            validateSharedModule(module, moduleName, self._reporter)
-        end
-
-        self._shared[moduleName] = module
-        self._server[moduleName] = module
-
-        table.insert(sharedModules, {
-            module = module,
-            orders = { siblingOrder },
-        })
-    end
-
-    if self._useRecursiveMode then
-        for siblingOrder, moduleScript in self._sharedScripts do
-            local localSharedModules = self._localModules[moduleScript]
-
-            for name, content in self._shared do
-                localSharedModules[name] = content
+    return loadModules(self._sharedScripts, {
+        reporter = self._reporter,
+        verifyName = function(subModuleName, localModules)
+            self:_verifySharedModuleName(subModuleName, localModules)
+        end,
+        excludeModuleFilter = self._excludeModuleFilter,
+        localModulesMap = self._localModules,
+        requireModule = self._requireModule,
+        useRecursiveMode = self._useRecursiveMode,
+        moduleKind = 'shared',
+        rootModulesMap = self._shared,
+        onRootLoaded = function(moduleInfo)
+            if _G.DEV and not self._customModuleFilter(moduleInfo.moduleScript) then
+                validateSharedModule(moduleInfo.module, moduleInfo.name, self._reporter)
             end
 
-            local nestedModules = loadNestedModules({
-                module = moduleScript,
-                reporter = self._reporter,
-                requireModule = self._requireModule,
-                localModulesMap = self._localModules,
-                orders = { siblingOrder },
-                verifyName = function(subModuleName, localModules)
-                    self:_verifySharedModuleName(subModuleName, localModules)
-                end,
-            }, self._services, true)
-            table.move(nestedModules, 1, #nestedModules, #sharedModules + 1, sharedModules)
-        end
-    end
-
-    return sortModuleByLevel(sharedModules)
+            self._server[moduleInfo.name] = moduleInfo.module
+        end,
+    }, self._services, true)
 end
 
 function ModuleLoader:_verifySharedModuleName(moduleName: string, localModules: { [string]: any })
@@ -239,158 +223,132 @@ function ModuleLoader:_verifyServerModuleName(moduleName: string, localModules: 
     )
 end
 
-function ModuleLoader:_loadServerModules(): { CrosswalkModule }
+function ModuleLoader:_loadServerModules(): { LoadedModuleInfo }
     local self = self :: ModuleLoader & Private
 
-    local serverModules = {}
+    return loadModules(self._serverScripts, {
+        reporter = self._reporter,
+        verifyName = function(subModuleName, localModules)
+            self:_verifyServerModuleName(subModuleName, localModules)
+        end,
+        excludeModuleFilter = self._excludeModuleFilter,
+        localModulesMap = self._localModules,
+        requireModule = self._requireModule,
+        useRecursiveMode = self._useRecursiveMode,
+        moduleKind = 'server',
+        rootModulesMap = self._server,
+        baseModules = self._shared,
+        onRootLoaded = function(moduleInfo)
+            if self._customModuleFilter(moduleInfo.moduleScript) then
+                self._reporter:debug('skip server module setup for `%s`', moduleInfo.name)
+                return
+            end
 
-    for siblingOrder, moduleScript in self._serverScripts do
-        local moduleName = moduleScript.Name
-        self._reporter:debug('loading server module `%s`', moduleName)
+            local moduleName = moduleInfo.name
+            local module = moduleInfo.module
 
-        self:_verifyServerModuleName(moduleName, self._server)
+            local api = {}
 
-        local localServerModules = nil
-        if self._useRecursiveMode then
-            localServerModules = table.clone(self._shared)
-            self._localModules[moduleScript] = localServerModules
-        else
-            localServerModules = self._server
-        end
+            for functionName, func in pairs(module) do
+                if type(func) == 'function' then
+                    local name = nil
+                    local serverToServerFunction = nil
 
-        local api = {}
+                    if functionName:match(EVENT_PATTERN) then
+                        name = extractFunctionName(functionName)
+                        self._serverRemotes:addEventToServer(
+                            moduleName,
+                            name,
+                            func :: any,
+                            getSecurity(functionName)
+                        )
+                        serverToServerFunction = function(...)
+                            if _G.DEV then
+                                local values = table.pack(func(...))
+                                self:_validateReturnedValues(values, {
+                                    moduleName = moduleName,
+                                    functionName = functionName,
+                                    moduleFunction = func,
+                                })
 
-        local module =
-            self._requireModule(moduleScript, localServerModules, self._client, self._services)
-
-        for functionName, func in pairs(module) do
-            if type(func) == 'function' then
-                local name = nil
-                local serverToServerFunction = nil
-
-                if functionName:match(EVENT_PATTERN) then
-                    name = extractFunctionName(functionName)
-                    self._serverRemotes:addEventToServer(
-                        moduleName,
-                        name,
-                        func :: any,
-                        getSecurity(functionName)
-                    )
-                    serverToServerFunction = function(...)
-                        if _G.DEV then
-                            local values = table.pack(func(...))
-                            self:_validateReturnedValues(values, {
-                                moduleName = moduleName,
-                                functionName = functionName,
-                                moduleFunction = func,
-                            })
-
-                            if values.n > 1 then
-                                self._reporter:warn(
-                                    'function `%s.%s` is declared as an exposed remote '
-                                        .. 'event, but it is returning more than the '
-                                        .. 'required validation boolean.\n\nTo make this '
-                                        .. 'function return values to clients, replace '
-                                        .. 'the `_event` suffix with `_func`. If the '
-                                        .. 'function does not need to return values, '
-                                        .. 'remove them as they are ignored by crosswalk',
-                                    moduleName,
-                                    functionName
-                                )
+                                if values.n > 1 then
+                                    self._reporter:warn(
+                                        'function `%s.%s` is declared as an exposed remote '
+                                            .. 'event, but it is returning more than the '
+                                            .. 'required validation boolean.\n\nTo make this '
+                                            .. 'function return values to clients, replace '
+                                            .. 'the `_event` suffix with `_func`. If the '
+                                            .. 'function does not need to return values, '
+                                            .. 'remove them as they are ignored by crosswalk',
+                                        moduleName,
+                                        functionName
+                                    )
+                                end
+                            else
+                                func(...)
                             end
-                        else
-                            func(...)
+                        end
+                    elseif functionName:match(FUNCTION_PATTERN) then
+                        name = extractFunctionName(functionName)
+                        self._serverRemotes:addFunctionToServer(
+                            moduleName,
+                            name,
+                            func :: any,
+                            getSecurity(functionName)
+                        )
+                        serverToServerFunction = function(...)
+                            if _G.DEV then
+                                local values = table.pack(func(...))
+                                self:_validateReturnedValues(values, {
+                                    moduleName = moduleName,
+                                    functionName = functionName,
+                                    moduleFunction = func,
+                                })
+
+                                return unpack(values, 2, values.n)
+                            else
+                                return select(2, (func :: any)(...))
+                            end
                         end
                     end
-                elseif functionName:match(FUNCTION_PATTERN) then
-                    name = extractFunctionName(functionName)
-                    self._serverRemotes:addFunctionToServer(
-                        moduleName,
-                        name,
-                        func :: any,
-                        getSecurity(functionName)
-                    )
-                    serverToServerFunction = function(...)
-                        if _G.DEV then
-                            local values = table.pack(func(...))
-                            self:_validateReturnedValues(values, {
-                                moduleName = moduleName,
-                                functionName = functionName,
-                                moduleFunction = func,
-                            })
 
-                            return unpack(values, 2, values.n)
-                        else
-                            return select(2, (func :: any)(...))
-                        end
+                    if name then
+                        self._reporter:assert(
+                            api[name] == nil,
+                            'server module named %q has defined two functions that resolves to the '
+                                .. 'same name `%s`. Rename one of them or remove an unused one',
+                            moduleName,
+                            name
+                        )
+                        self._reporter:assert(
+                            module[name] == nil,
+                            'server module named %q already has a %s named `%s` that collides '
+                                .. 'with the generated function from `%s`',
+                            moduleName,
+                            typeof(api[name]) == 'function' and 'function' or 'value',
+                            name,
+                            functionName
+                        )
+                        api[name] = serverToServerFunction
                     end
-                end
-
-                if name then
-                    self._reporter:assert(
-                        api[name] == nil,
-                        'server module named %q has defined two functions that resolves to the '
-                            .. 'same name `%s`. Rename one of them or remove an unused one',
-                        moduleName,
-                        name
-                    )
-                    self._reporter:assert(
-                        module[name] == nil,
-                        'server module named %q already has a %s named `%s` that collides '
-                            .. 'with the generated function from `%s`',
-                        moduleName,
-                        typeof(api[name]) == 'function' and 'function' or 'value',
-                        name,
-                        functionName
-                    )
-                    api[name] = serverToServerFunction
-                end
-            end
-        end
-
-        for name, newFunction in pairs(api) do
-            module[name] = newFunction
-        end
-
-        self._server[moduleName] = module
-        table.insert(serverModules, {
-            module = module,
-            orders = { siblingOrder },
-        })
-    end
-
-    if self._useRecursiveMode then
-        for siblingOrder, moduleScript in self._serverScripts do
-            local localServerModules = self._localModules[moduleScript]
-
-            for name, content in self._server do
-                if self._shared[name] == nil then
-                    localServerModules[name] = content
                 end
             end
 
-            local nestedModules = loadNestedModules({
-                module = moduleScript,
-                reporter = self._reporter,
-                requireModule = self._requireModule,
-                localModulesMap = self._localModules,
-                baseModules = self._shared,
-                orders = { siblingOrder },
-                verifyName = function(subModuleName, localModules)
-                    self:_verifyServerModuleName(subModuleName, localModules)
-                end,
-            }, self._client, self._services)
-            table.move(nestedModules, 1, #nestedModules, #serverModules + 1, serverModules)
-        end
-    end
-
-    return sortModuleByLevel(serverModules)
+            for name, newFunction in api do
+                module[name] = newFunction
+            end
+        end,
+    }, self._client, self._services)
 end
 
 function ModuleLoader:_setupClientRemotes()
     local self = self :: ModuleLoader & Private
 
     for _, moduleScript in self._clientScripts do
+        if self._excludeModuleFilter(moduleScript) then
+            self._reporter:debug('exclude module `%s`', moduleScript.Name)
+            continue
+        end
         local moduleName = moduleScript.Name
 
         self._reporter:assert(
@@ -408,6 +366,13 @@ function ModuleLoader:_setupClientRemotes()
             'client module named %q was already registered as a client module',
             moduleName
         )
+
+        if self._customModuleFilter(moduleScript) then
+            -- if the client module is a custom module, then there will be no
+            -- remote events to setup
+            self._reporter:debug('skip client module setup for `%s`', moduleName)
+            continue
+        end
 
         local module = self._requireModule(moduleScript, {}, {}, Services)
 
@@ -479,9 +444,17 @@ function ModuleLoader:onPlayerReady(player: Player)
         player.Name
     )
     self._ranOnPlayerReady[player] = true
-    for _, module in self._onlyServer do
-        if module.OnPlayerReady then
-            task.spawn(module.OnPlayerReady, player)
+
+    self._reporter:info('calling `OnPlayerReady` for player `%s` (%d)', player.Name, player.UserId)
+    for _, moduleInfo in self._onlyServer do
+        if moduleInfo.module.OnPlayerReady then
+            self._reporter:debug(
+                'calling `OnPlayerReady` on `%s` for `%s` (%d)',
+                moduleInfo.name,
+                player.Name,
+                player.UserId
+            )
+            task.spawn(moduleInfo.module.OnPlayerReady, player)
         end
     end
 end
@@ -492,9 +465,20 @@ function ModuleLoader:onPlayerRemoving(player: Player)
     self._serverRemotes:clearPlayer(player)
     self._ranOnPlayerReady[player] = nil
 
-    for _, module in self._onlyServer do
-        if module.OnPlayerLeaving then
-            task.spawn(module.OnPlayerLeaving, player)
+    self._reporter:info(
+        'calling `OnPlayerLeaving` for player `%s` (%d)',
+        player.Name,
+        player.UserId
+    )
+    for _, moduleInfo in self._onlyServer do
+        if moduleInfo.module.OnPlayerLeaving then
+            self._reporter:debug(
+                'calling `OnPlayerLeaving` on `%s` for `%s` (%d)',
+                moduleInfo.name,
+                player.Name,
+                player.UserId
+            )
+            task.spawn(moduleInfo.module.OnPlayerLeaving, player)
         end
     end
 end
@@ -578,7 +562,6 @@ function ModuleLoader.new(options: NewModuleLoaderOptions): ModuleLoader
     return setmetatable({
         _hasLoaded = false,
         _shared = {},
-        _onlyShared = {},
         _server = {},
         _onlyServer = {},
         _client = {},
@@ -588,6 +571,8 @@ function ModuleLoader.new(options: NewModuleLoaderOptions): ModuleLoader
         _serverScripts = options.server,
         _clientScripts = options.client,
         _serverRemotes = options.serverRemotes,
+        _customModuleFilter = options.customModuleFilter or defaultCustomModuleFilter,
+        _excludeModuleFilter = options.excludeModuleFilter or defaultExcludeModuleFilter,
         _reporter = options.reporter or Reporter.default(),
         _services = options.services or Services,
         _requireModule = options.requireModule or requireModule,

@@ -64,6 +64,8 @@ The `configuration` parameter is a table that contains the values presented here
 | `onKeyMissing` | `function` (optional) | a function that gets called when a player calls a remote |
 | `onUnapprovedExecution` | `function` (optional) | a function that gets called when a call to a server module function exposed to clients does not validate and the server module does not have a `OnUnapprovedExecution` function defined |
 | `remoteCallMaxDelay` | `number` (optional) | the maximum amount of time the server waits for players to send back data when doing a remote function request |
+| `customModuleFilter` | `(ModuleScript) -> boolean` (optional) | Provide a function to filter modules that are not regular crosswwalk modules. crosswalk will not automatically call `Init`, `Start`, `OnPlayerReady` or `OnPlayerLeaving` functions on these modules. Defaults to a filter that selects ModuleScript with names ending with `Class` |
+| `excludeModuleFilter` | `(ModuleScript) -> boolean` (optional) | Provide a function that excludes ModuleScripts from loading at all. Defaults to a filter that removes ModuleScript with names ending with `.spec` or `.test` |
 
 ### `start`
 

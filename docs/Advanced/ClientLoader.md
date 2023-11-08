@@ -52,6 +52,8 @@ The `configuration` parameter is a table that contains the values presented here
 | `sharedModules` | [ModuleScript](https://developer.roblox.com/en-us/api-reference/class/ModuleScript) list | a list of shared modules to load |
 | `externalModules` | `{ [string]: any }` | a dictionary that maps a module name to its implementation |
 | `logLevel` | `'error'`, `'warn'`, `'info'` or `'debug'` | Defines what will crosswalk's reporter outputs to the console. Default is `'warn'` |
+| `customModuleFilter` | `(ModuleScript) -> boolean` (optional) | Provide a function to filter modules that are not regular crosswwalk modules. crosswalk will not automatically call `Init`, `Start`, `OnPlayerReady` or `OnPlayerLeaving` functions on these modules. Defaults to a filter that selects ModuleScript with names ending with `Class` |
+| `excludeModuleFilter` | `(ModuleScript) -> boolean` (optional) | Provide a function that excludes ModuleScripts from loading at all. Defaults to a filter that removes ModuleScript with names ending with `.spec` or `.test` |
 
 ### `start`
 

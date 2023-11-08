@@ -7,6 +7,7 @@ local ClientModuleLoader = require('./ClientModuleLoader')
 type ClientModuleLoader = ClientModuleLoader.ClientModuleLoader
 local ClientRemotes = require('./ClientRemotes')
 type ClientRemotes = ClientRemotes.ClientRemotes
+local filterArray = require('../Common/filterArray')
 local Reporter = require('../Common/Reporter')
 type Reporter = Reporter.Reporter
 type LogLevel = Reporter.LogLevel
@@ -22,11 +23,13 @@ type Private = {
 }
 
 type ClientLoaderConfiguration = {
-    sharedModules: { ModuleScript },
-    clientModules: { ModuleScript },
+    sharedModules: { Instance },
+    clientModules: { Instance },
     externalModules: { [string]: any }?,
     clientModuleLoader: ClientModuleLoader?,
     logLevel: LogLevel?,
+    customModuleFilter: ((ModuleScript) -> boolean)?,
+    excludeModuleFilter: ((ModuleScript) -> boolean)?,
     reporter: Reporter?,
     player: Player?,
     services: Services?,
@@ -35,6 +38,10 @@ type ClientLoaderConfiguration = {
 type ClientLoaderStatic = ClientLoader & Private & {
     new: (configuration: ClientLoaderConfiguration) -> ClientLoader,
 }
+
+local function filterModuleScripts(instance: Instance): boolean
+    return instance:IsA('ModuleScript')
+end
 
 local ClientLoader: ClientLoaderStatic = {} :: any
 local ClientLoaderMetatable = {
@@ -66,13 +73,15 @@ function ClientLoader.new(configuration: ClientLoaderConfiguration): ClientLoade
 
     local clientModuleLoader = configuration.clientModuleLoader
         or ClientModuleLoader.new({
-            shared = configuration.sharedModules,
-            client = configuration.clientModules,
+            shared = filterArray(configuration.sharedModules, filterModuleScripts) :: any,
+            client = filterArray(configuration.clientModules, filterModuleScripts) :: any,
             external = configuration.externalModules,
             player = player,
             reporter = reporter,
             services = configuration.services or ClientServices,
             clientRemotes = clientRemotes,
+            customModuleFilter = configuration.customModuleFilter,
+            excludeModuleFilter = configuration.excludeModuleFilter,
             useRecursiveMode = configuration.useRecursiveMode,
         })
 

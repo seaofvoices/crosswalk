@@ -11,6 +11,7 @@ local PlayerMockMetatable = {
 local function new(): Player
     return setmetatable({
         Name = 'Player',
+        UserId = 1234,
     }, PlayerMockMetatable) :: any
 end
 
