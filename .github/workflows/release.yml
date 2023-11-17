@@ -34,7 +34,10 @@ jobs:
         run: yarn set version stable
 
       - name: Install packages
-        run: yarn install --frozen-lockfile
+        run: yarn install --immutable
+
+      - name: Run npmluau
+        run: yarn run prepare
 
       - run: yarn workspaces foreach --all --no-private npm publish
         env:
@@ -143,7 +146,10 @@ jobs:
         run: yarn set version stable
 
       - name: Install packages
-        run: yarn install --frozen-lockfile
+        run: yarn install --immutable
+
+      - name: Run npmluau
+        run: yarn run prepare
 
       - name: Build assets
         run: yarn run build-assets

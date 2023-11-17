@@ -8,9 +8,6 @@ BUILD_OUTPUT=$3
 ARTIFACT_NAME=$4
 CODE_OUTPUT=roblox/$DARKLUA_CONFIG
 
-yarn install
-yarn prepare
-
 rm -rf $CODE_OUTPUT
 mkdir -p $CODE_OUTPUT
 
