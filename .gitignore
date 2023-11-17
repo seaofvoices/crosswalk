@@ -6,6 +6,13 @@
 /*.rbxm
 /*.rbxmx
 
+.yarn
+*.tgz
+.pnp.cjs
+**/node_modules
+/roblox
+**/sourcemap.json
+
 build/
 test-places/
 docs/releases/main

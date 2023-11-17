@@ -2,29 +2,29 @@
   process: [
     {
       rule: "convert_require",
-      current: "path",
+      current: {
+        name: "path",
+        sources: {
+          "@pkg": "node_modules/.luau-aliases",
+        },
+      },
       target: {
         name: "roblox",
         rojo_sourcemap: "./rojo/sourcemap.json",
         indexing_style: "wait_for_child",
       },
     },
-    "remove_comments",
-    "remove_spaces",
     {
       rule: "inject_global_value",
       identifier: "DEV",
-      value: false,
+      value: true,
     },
     "compute_expression",
     "remove_unused_if_branch",
     "filter_after_early_return",
     "convert_index_to_field",
-    "remove_nil_declaration",
     "remove_unused_while",
-    "rename_variables",
     "remove_empty_do",
     "remove_method_definition",
-    "remove_function_call_parens",
   ],
 }

@@ -1,6 +1,6 @@
 {
     "name": "crosswalk-server",
     "tree": {
-        "$path": "../src/Main.server.lua"
+        "$path": "../src/server-main/Main.server.lua"
     }
 }

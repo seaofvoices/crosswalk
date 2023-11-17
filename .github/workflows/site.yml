@@ -32,8 +32,17 @@ jobs:
       - name: Install python dependencies
         run: python -m pip install -r requirements.txt
 
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "latest"
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
+
+      - name: Install packages
+        run: yarn install --frozen-lockfile
+
       - name: Build assets
-        run: lune build-assets
+        run: yarn run build-site
 
       - name: Build docs site
         run: |

@@ -1,0 +1,20 @@
+{
+  "name": "workspace",
+  "private": true,
+  "workspaces": [
+    "src/*"
+  ],
+  "scripts": {
+    "prepare": "npmluau",
+    "lint": "sh ./scripts/analyze.sh",
+    "build-assets": "sh ./scripts/build.sh",
+    "build-site": "sh ./scripts/build-site.sh",
+    "roblox-test": "sh ./scripts/build-and-run-test.sh",
+    "format": "stylua .",
+    "style-check": "stylua --check .",
+    "clean": "rm -rf node_modules roblox build"
+  },
+  "devDependencies": {
+    "npmluau": "^0.1.0"
+  }
+}

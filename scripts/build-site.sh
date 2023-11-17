@@ -1,8 +1,8 @@
 #!/bin/sh
 
-set -ex
+set -e
 
-lune build-assets
+./scripts/build.sh
 
 mkdir -p ./docs/releases
 rm -rf ./docs/releases/main

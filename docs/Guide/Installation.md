@@ -1,12 +1,13 @@
 # Installation
 
-crosswalk has two necessary dependency, the client loader and the server loader. Along with this, it comes with two default booting scripts. Except if you have a very particular use-case, you should use the default boot scripts. The next table shows where you should put each of the assets into the Roblox game.
+crosswalk has two code dependencies, the **client loader** and the **server loader**. Along with this, it comes with two default main scripts.
 
 | asset | parent instance |
 | -- | -- |
 | Client Loader | [ReplicatedStorage](https://developer.roblox.com/en-us/api-reference/class/ReplicatedStorage) |
 | Server Loader | [ServerStorage](https://developer.roblox.com/en-us/api-reference/class/ServerStorage) |
-| Client Main | [ReplicatedFirst](https://developer.roblox.com/en-us/api-reference/class/ReplicatedFirst) |
+| Common | [ReplicatedStorage](https://developer.roblox.com/en-us/api-reference/class/ReplicatedStorage) |
+| Client Main | [StarterPlayerScripts](https://developer.roblox.com/en-us/api-reference/class/StarterPlayerScripts) or [ReplicatedFirst](https://developer.roblox.com/en-us/api-reference/class/ReplicatedFirst) |
 | Server Main| [ServerScriptService](https://developer.roblox.com/en-us/api-reference/class/ServerScriptService) |
 
 After, all you need to do is insert three folders into the game that will contain your modules. You can find more information about this on the [Getting Started](GettingStarted.md#project-structure) page.
@@ -19,52 +20,32 @@ You can also download these Roblox model files and insert them into your game. T
 | -- | -- | -- |
 | Client Loader | [client-loader.rbxm](../releases/main/debug/client-loader.rbxm) | [client-loader.rbxm](../releases/main/client-loader.rbxm) |
 | Server Loader | [server-loader.rbxm](../releases/main/debug/server-loader.rbxm) | [server-loader.rbxm](../releases/main/server-loader.rbxm) |
+| Common | [common.rbxm](../releases/main/debug/common.rbxm) | [common.rbxm](../releases/main/common.rbxm) |
 | Client Main | [client-main.rbxm](../releases/main/debug/client-main.rbxm) | [client-main.rbxm](../releases/main/client-main.rbxm) |
-| Server Main| [server-main.rbxm](../releases/main/debug/server-main.rbxm) | [server-main.rbxm](../releases/main/server-main.rbxm) |
+| Server Main | [server-main.rbxm](../releases/main/debug/server-main.rbxm) | [server-main.rbxm](../releases/main/server-main.rbxm) |
 
 !!! Important
     The difference between the develop and production builds is that warnings and verifications are removed from the production builds.
 
-## As a Git Submodule
+## Quick Install
 
-To add the project as a git submodule into an existing git repository, run
+For a quick install, crosswalk is also available as two bundled files, the server main script and the client main script. Note that if you wish to customize the entry points, these bundled scripts are not made for that.
 
+| asset | develop | production |
+| -- | -- | -- |
+| Client Main (bundled) | [crosswalk-main-client.lua](../releases/main/debug/crosswalk-main-client.lua) | [crosswalk-main-client.lua](../releases/main/crosswalk-main-client.lua) |
+| Server Main (bundled) | [crosswalk-main-server.lua](../releases/main/debug/crosswalk-main-server.lua) | [crosswalk-main-server.lua](../releases/main/crosswalk-main-server.lua) |
+
+## Using the `npm` Packages
+
+Add `crosswalk-client` and `crosswalk-server` in your dependencies:
+
+```bash
+yarn add crosswalk-client crosswalk-server
 ```
-git submodule add https://github.com/seaofvoices/crosswalk.git modules/crosswalk
-```
 
-This will insert it in a folder named `modules` under the root of the repository, but you can put it anywhere you want.
+Or if you are using `npm`:
 
-If you are using [Rojo](https://rojo.space/) to sync (or build) your project, all you need to do is to modify your configuration file to tell Rojo where to put crosswalk's assets. With the default client and server loaders included in crosswalk, the project file should contain the following information:
-
-```json
-{
-    "tree": {
-        "$className": "DataModel",
-        "ReplicatedFirst": {
-            "$className": "ReplicatedFirst",
-            "ClientMain": {
-                "$path": "path/to/crosswalk/src/ClientMain.client.lua"
-            }
-        },
-        "ReplicatedStorage": {
-            "$className": "ReplicatedStorage",
-            "ClientLoader": {
-                "$path": "path/to/crosswalk/src/ClientLoader"
-            },
-        },
-        "ServerScriptService": {
-            "$className": "ServerScriptService",
-            "Main": {
-                "$path": "path/to/crosswalk/src/Main.server.lua"
-            }
-        },
-        "ServerStorage": {
-            "$className": "ServerStorage",
-            "ServerLoader": {
-                "$path": "path/to/crosswalk/src/ServerLoader"
-            }
-        }
-    }
-}
+```bash
+npm install crosswalk-client crosswalk-server
 ```
