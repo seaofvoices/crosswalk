@@ -87,17 +87,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - artifact-name: crosswwalk-main-client.lua
-            path: build/crosswwalk-main-client.lua
+          - artifact-name: crosswalk-main-client.lua
+            path: build/crosswalk-main-client.lua
             asset-type: text/plain
-          - artifact-name: crosswwalk-main-server.lua
-            path: build/crosswwalk-main-server.lua
+          - artifact-name: crosswalk-main-server.lua
+            path: build/crosswalk-main-server.lua
             asset-type: text/plain
-          - artifact-name: crosswwalk-main-client-debug.lua
-            path: build/debug/crosswwalk-main-client.lua
+          - artifact-name: crosswalk-main-client-debug.lua
+            path: build/debug/crosswalk-main-client.lua
             asset-type: text/plain
-          - artifact-name: crosswwalk-main-server-debug.lua
-            path: build/debug/crosswwalk-main-server.lua
+          - artifact-name: crosswalk-main-server-debug.lua
+            path: build/debug/crosswalk-main-server.lua
             asset-type: text/plain
 
           - artifact-name: server-loader.rbxm
