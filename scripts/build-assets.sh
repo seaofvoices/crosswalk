@@ -24,12 +24,6 @@ else
     cp -r modules/testez $CODE_OUTPUT/modules
 fi
 
-echo "list node_modules"
-ls -Ra node_modules
-
-echo "list copied node_modules"
-ls -Ra $CODE_OUTPUT/node_modules
-
 mkdir -p $CODE_OUTPUT/rojo
 
 rojo sourcemap rojo/$ROJO_CONFIG -o $CODE_OUTPUT/rojo/sourcemap.json
