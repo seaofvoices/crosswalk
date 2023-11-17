@@ -24,7 +24,7 @@ else
     cp -r modules/testez $CODE_OUTPUT/modules
 fi
 
-ls -a $CODE_OUTPUT/node_modules
+ls -Ra $CODE_OUTPUT/node_modules
 
 mkdir -p $CODE_OUTPUT/rojo
 
