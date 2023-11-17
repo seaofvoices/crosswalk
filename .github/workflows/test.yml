@@ -35,16 +35,6 @@ jobs:
       - name: Run npmluau
         run: yarn run prepare
 
-      - name: Authenticate yarn
-        run: |
-          yarn config set npmAlwaysAuth true
-          yarn config set npmAuthToken $NPM_AUTH_TOKEN
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Who am I
-        run: yarn npm whoami
-
       - name: Run linter
         run: yarn run lint
 
