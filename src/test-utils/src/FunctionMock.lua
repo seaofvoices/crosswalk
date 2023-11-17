@@ -69,9 +69,9 @@ function FunctionMock:expectCalls(expect: any, expectedCalls: { Call })
     expect(#self.calls).to.equal(#expectedCalls)
     for i = 1, #expectedCalls do
         local call = self.calls[i]
-        expect(call.argumentCount).to.equal(#expectedCalls[i])
+        expect(call.argumentCount).to.equal(expectedCalls[i].argumentCount)
         for j = 1, call.argumentCount do
-            expect(call.arguments[j]).to.equal(expectedCalls[i][j])
+            expect(call.arguments[j]).to.equal(expectedCalls[i].arguments[j])
         end
     end
 end

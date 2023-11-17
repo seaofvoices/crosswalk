@@ -1,6 +1,6 @@
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
-local ClientLoader = require('./ClientLoader')
+local ClientLoader = require('@pkg/crosswalk-client')
 
 local clientLoader = ClientLoader.new({
     clientModules = ReplicatedStorage:WaitForChild('ClientModules'):GetChildren(),

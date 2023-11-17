@@ -1,7 +1,7 @@
 return function()
     local ClientRemotes = require('./ClientRemotes')
 
-    local Mocks = require('../Common/TestUtils/Mocks')
+    local Mocks = require('@pkg/crosswalk-test-utils').Mocks
 
     type InstanceMock = Instance & {
         _children: { [string]: InstanceMock },

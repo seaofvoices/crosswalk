@@ -1,17 +1,20 @@
 local getSecurity = require('./getSecurity')
 local Services = require('./Services')
-local Reporter = require('../Common/Reporter')
-type Reporter = Reporter.Reporter
-local requireModule = require('../Common/requireModule')
-type CrosswalkModule = requireModule.CrosswalkModule
-type LoadedModuleInfo = requireModule.LoadedModuleInfo
-local loadModules = require('../Common/loadModules')
-local validateSharedModule = require('../Common/validateSharedModule')
-local extractFunctionName = require('../Common/extractFunctionName')
-local defaultCustomModuleFilter = require('../Common/defaultCustomModuleFilter')
-local defaultExcludeModuleFilter = require('../Common/defaultExcludeModuleFilter')
-local filterArray = require('../Common/filterArray')
+
+local Common = require('@pkg/crosswalk-common')
+local Reporter = Common.Reporter
+local requireModule = Common.requireModule
+local loadModules = Common.loadModules
+local validateSharedModule = Common.validateSharedModule
+local extractFunctionName = Common.extractFunctionName
+local defaultCustomModuleFilter = Common.defaultCustomModuleFilter
+local defaultExcludeModuleFilter = Common.defaultExcludeModuleFilter
+local filterArray = Common.filterArray
 local ServerRemotes = require('./ServerRemotes')
+
+type Reporter = Common.Reporter
+type CrosswalkModule = Common.CrosswalkModule
+type LoadedModuleInfo = Common.LoadedModuleInfo
 type ServerRemotes = ServerRemotes.ServerRemotes
 
 local EVENT_PATTERN = '_event$'
@@ -42,7 +45,7 @@ type Private = {
     _onlyServer: { LoadedModuleInfo },
     _client: { [string]: any },
     _serverRemotes: ServerRemotes,
-    _reporter: Reporter.Reporter,
+    _reporter: Reporter,
     _requireModule: <T...>(moduleScript: ModuleScript, T...) -> CrosswalkModule,
     _services: Services.Services,
     _customModuleFilter: (ModuleScript) -> boolean,

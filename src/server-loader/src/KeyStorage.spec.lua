@@ -1,7 +1,8 @@
 return function()
     local KeyStorage = require('./KeyStorage')
 
-    local ReporterBuilder = require('../Common/TestUtils/ReporterBuilder')
+    local TestUtils = require('@pkg/crosswalk-test-utils')
+    local ReporterBuilder = TestUtils.ReporterBuilder
 
     local PLAYER_NAME = 'oof'
 

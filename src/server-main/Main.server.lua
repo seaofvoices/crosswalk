@@ -1,7 +1,7 @@
 local ServerStorage = game:GetService('ServerStorage')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
-local ServerLoader = require('./ServerLoader')
+local ServerLoader = require('@pkg/crosswalk-server')
 
 local server = ServerLoader.new({
     serverModules = ServerStorage:WaitForChild('ServerModules'):GetChildren(),

@@ -1,8 +1,11 @@
-local Reporter = require('../Reporter')
-export type Reporter = Reporter.Reporter
+local Common = require('@pkg/crosswalk-common')
+local Reporter = Common.Reporter
+
+export type Reporter = Common.Reporter
+type LogLevel = Common.LogLevel
 
 type Event = {
-    level: Reporter.LogLevel,
+    level: LogLevel,
     message: string,
 }
 type HasEvents = { events: { Event } }
@@ -37,10 +40,10 @@ end
 
 local function noop() end
 
-function ReporterBuilder:build(): Reporter.Reporter & HasEvents
+function ReporterBuilder:build(): Reporter & HasEvents
     local self = self :: ReporterBuilder & Private
     local events = {}
-    local function getLevelLogger(level: Reporter.LogLevel)
+    local function getLevelLogger(level: LogLevel)
         return function(message: string)
             table.insert(events, {
                 level = level,

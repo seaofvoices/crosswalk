@@ -1,7 +1,8 @@
-local ServerRemotes = require('../../ServerLoader/ServerRemotes')
+local ServerRemotes = require('../ServerRemotes')
 type ServerRemotes = ServerRemotes.ServerRemotes
 
-local Mocks = require('./Mocks')
+local TestUtils = require('@pkg/crosswalk-test-utils')
+local Mocks = TestUtils.Mocks
 
 export type RemoteEventMock = {
     moduleName: string,
@@ -12,7 +13,7 @@ export type RemoteEventMock = {
 export type ServerRemotesMock = ServerRemotes & {
     events: { RemoteEventMock },
     functions: { RemoteEventMock },
-    clearPlayer: Mocks.FunctionMock,
+    clearPlayer: TestUtils.FunctionMock,
 }
 local function createServerRemotesMock(): ServerRemotesMock
     return {

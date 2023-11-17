@@ -1,7 +1,8 @@
-local ClientRemotes = require('../../ClientLoader/ClientRemotes')
+local ClientRemotes = require('../ClientRemotes')
 type ClientRemotes = ClientRemotes.ClientRemotes
 
-local Mocks = require('./Mocks')
+local TestUtils = require('@pkg/crosswalk-test-utils')
+local Mocks = TestUtils.Mocks
 
 export type ClientRemotesMock = ClientRemotes & {
     remotes: { [string]: { [string]: () -> ()? } },

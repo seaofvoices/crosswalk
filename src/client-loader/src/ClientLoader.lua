@@ -7,10 +7,11 @@ local ClientModuleLoader = require('./ClientModuleLoader')
 type ClientModuleLoader = ClientModuleLoader.ClientModuleLoader
 local ClientRemotes = require('./ClientRemotes')
 type ClientRemotes = ClientRemotes.ClientRemotes
-local filterArray = require('../Common/filterArray')
-local Reporter = require('../Common/Reporter')
-type Reporter = Reporter.Reporter
-type LogLevel = Reporter.LogLevel
+local Common = require('@pkg/crosswalk-common')
+local filterArray = Common.filterArray
+local Reporter = Common.Reporter
+type Reporter = Common.Reporter
+type LogLevel = Common.LogLevel
 
 export type ClientLoader = {
     start: (self: ClientLoader) -> (),

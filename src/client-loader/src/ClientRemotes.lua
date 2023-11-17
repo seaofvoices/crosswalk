@@ -1,8 +1,10 @@
 local getFireRemote = require('./getFireRemote')
-local Reporter = require('../Common/Reporter')
-type Reporter = Reporter.Reporter
-local RemoteInformation = require('../Common/RemoteInformation')
-type RemoteInformation = RemoteInformation.RemoteInformation
+
+local Common = require('@pkg/crosswalk-common')
+local Reporter = Common.Reporter
+
+type RemoteInformation = Common.RemoteInformation
+type Reporter = Common.Reporter
 
 export type ClientRemotes = {
     listen: (self: ClientRemotes) -> (),

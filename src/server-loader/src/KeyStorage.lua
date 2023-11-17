@@ -1,8 +1,8 @@
 local createKey = require('./createKey')
 local Map2D = require('./Map2D')
 type Map2D<T, U, V> = Map2D.Map2D<T, U, V>
-local Reporter = require('../Common/Reporter')
-type Reporter = Reporter.Reporter
+local Common = require('@pkg/crosswalk-common')
+type Reporter = Common.Reporter
 
 export type KeyStorage = {
     createKey: (self: KeyStorage, Player, moduleName: string, functionName: string) -> string,

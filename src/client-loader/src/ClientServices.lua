@@ -1,13 +1,13 @@
-local makeServices = require('../Common/makeServices')
+local Common = require('@pkg/crosswalk-common')
 
-export type Services = makeServices.Services & {
+export type Services = Common.Services & {
     ContextActionService: ContextActionService,
     ReplicatedFirst: ReplicatedFirst,
     RunService: RunService,
     UserInputService: UserInputService,
 }
 
-return makeServices({
+return Common.makeServices({
     ReplicatedFirst = game:GetService('ReplicatedFirst'),
     RunService = game:GetService('RunService'),
     UserInputService = game:GetService('UserInputService'),

@@ -6,10 +6,11 @@ local RemoteStorage = require('./RemoteStorage')
 type RemoteStorage = RemoteStorage.RemoteStorage
 local KeyStorage = require('./KeyStorage')
 type KeyStorage = KeyStorage.KeyStorage
-local Reporter = require('../Common/Reporter')
-type Reporter = Reporter.Reporter
-local RemoteInformation = require('../Common/RemoteInformation')
-type RemoteInformation = RemoteInformation.RemoteInformation
+
+local Common = require('@pkg/crosswalk-common')
+local Reporter = Common.Reporter
+type Reporter = Common.Reporter
+type RemoteInformation = Common.RemoteInformation
 
 type RemoteSecurity = 'None' | 'Low' | 'High'
 

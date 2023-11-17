@@ -3,14 +3,15 @@ return function()
 
     local ClientRemotes = require('./ClientRemotes')
     type ClientRemotes = ClientRemotes.ClientRemotes
-    local Mocks = require('../Common/TestUtils/Mocks')
-    local ReporterBuilder = require('../Common/TestUtils/ReporterBuilder')
-    local createModuleScriptMock = require('../Common/TestUtils/createModuleScriptMock')
-    type ModuleScriptMock = createModuleScriptMock.ModuleScriptMock
-    local RequireMock = require('../Common/TestUtils/RequireMock')
-    type RequiredArgs = RequireMock.RequiredArgs
-    local createClientRemotesMock = require('../Common/TestUtils/createClientRemotesMock')
-    local createModuleLoaderTests = require('../Common/TestUtils/createModuleLoaderTests')
+    local TestUtils = require('@pkg/crosswalk-test-utils')
+    local Mocks = TestUtils.Mocks
+    local ReporterBuilder = TestUtils.ReporterBuilder
+    local RequireMock = TestUtils.RequireMock
+    local createModuleLoaderTests = TestUtils.createModuleLoaderTests
+    local createClientRemotesMock = require('./tests-utils/createClientRemotesMock')
+
+    type ModuleScriptMock = TestUtils.ModuleScriptMock
+    type RequiredArgs = TestUtils.RequiredArgs
 
     local requireMock = RequireMock.new()
 
@@ -25,7 +26,7 @@ return function()
         external: { [string]: any }?,
         player: Player?,
         clientRemotes: ClientRemotes?,
-        reporter: ReporterBuilder.Reporter?,
+        reporter: TestUtils.Reporter?,
         useRecursiveMode: boolean?,
         services: any,
     }

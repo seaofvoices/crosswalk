@@ -13,8 +13,12 @@ type ServerRemotes = ServerRemotes.ServerRemotes
 local Services = require('./Services')
 type Services = Services.Services
 
-local Reporter = require('../Common/Reporter')
-local filterArray = require('../Common/filterArray')
+local Common = require('@pkg/crosswalk-common')
+local Reporter = Common.Reporter
+local filterArray = Common.filterArray
+
+type Reporter = Common.Reporter
+type LogLevel = Common.LogLevel
 
 local DEFAULT_REMOTE_CALL_MAX_DELAY = 2
 
@@ -41,8 +45,8 @@ export type ServerLoaderConfiguration = {
     serverModules: { Instance },
     clientModules: { Instance },
     externalModules: { [string]: any },
-    logLevel: Reporter.LogLevel?,
-    reporter: Reporter.Reporter?,
+    logLevel: LogLevel?,
+    reporter: Reporter?,
     onKeyError: ((Player, string, string) -> ())?,
     onKeyMissing: ((Player, string, string) -> ())?,
     moduleLoader: ModuleLoader?,

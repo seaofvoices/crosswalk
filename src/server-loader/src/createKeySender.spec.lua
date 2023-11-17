@@ -3,9 +3,12 @@ return function()
 
     local RemoteStorage = require('./RemoteStorage')
     type RemoteStorage = RemoteStorage.RemoteStorage
-    local PlayerMock = require('../Common/TestUtils/PlayerMock')
-    local RemoteEventMock = require('../Common/TestUtils/RemoteEventMock')
-    type RemoteEventMock = RemoteEventMock.RemoteEventMock
+
+    local TestUtils = require('@pkg/crosswalk-test-utils')
+
+    local PlayerMock = TestUtils.Mocks.Player
+    local RemoteEventMock = TestUtils.Mocks.RemoteEvent
+    type RemoteEventMock = TestUtils.RemoteEventMock
 
     it('fires the client when calling the function', function()
         local storageMock: RemoteStorage & { remote: RemoteEventMock? } = {
