@@ -6,7 +6,7 @@ DARKLUA_CONFIG=$1
 ROJO_CONFIG=$2
 BUILD_OUTPUT=$3
 ARTIFACT_NAME=$4
-CODE_OUTPUT=roblox/$DARKLUA_CONFIG
+CODE_OUTPUT=roblox
 
 rm -rf $CODE_OUTPUT
 mkdir -p $CODE_OUTPUT
@@ -24,13 +24,15 @@ else
     cp -r modules/testez $CODE_OUTPUT/modules
 fi
 
+ls -a $CODE_OUTPUT/node_modules
+
 mkdir -p $CODE_OUTPUT/rojo
 
 rojo sourcemap rojo/$ROJO_CONFIG -o $CODE_OUTPUT/rojo/sourcemap.json
 cp rojo/$ROJO_CONFIG $CODE_OUTPUT/rojo
 cp $DARKLUA_CONFIG $CODE_OUTPUT/$DARKLUA_CONFIG
 
-darklua process --config $CODE_OUTPUT/$DARKLUA_CONFIG $CODE_OUTPUT/node_modules $CODE_OUTPUT/node_modules
+darklua process -v --config $CODE_OUTPUT/$DARKLUA_CONFIG $CODE_OUTPUT/node_modules $CODE_OUTPUT/node_modules
 
 mkdir -p $BUILD_OUTPUT
 
