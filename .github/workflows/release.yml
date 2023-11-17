@@ -17,7 +17,34 @@ permissions:
   contents: write
 
 jobs:
+  publish-package:
+    name: Publish package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "latest"
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
+
+      - name: Update yarn
+        run: yarn set version stable
+
+      - name: Install packages
+        run: yarn install --immutable
+
+      - name: Run npmluau
+        run: yarn run prepare
+
+      - run: yarn workspaces foreach --all --no-private npm publish
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
   create-release:
+    needs: publish-package
     name: Create release
     runs-on: ubuntu-latest
 
@@ -55,23 +82,50 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - artifact-name: crosswwalk-main-client.lua
+            path: build/crosswwalk-main-client.lua
+            asset-type: text/plain
+          - artifact-name: crosswwalk-main-server.lua
+            path: build/crosswwalk-main-server.lua
+            asset-type: text/plain
+          - artifact-name: crosswwalk-main-client-debug.lua
+            path: build/debug/crosswwalk-main-client.lua
+            asset-type: text/plain
+          - artifact-name: crosswwalk-main-server-debug.lua
+            path: build/debug/crosswwalk-main-server.lua
+            asset-type: text/plain
+
           - artifact-name: server-loader.rbxm
             path: build/server-loader.rbxm
+            asset-type: application/octet-stream
           - artifact-name: client-loader.rbxm
             path: build/client-loader.rbxm
+            asset-type: application/octet-stream
           - artifact-name: server-main.rbxm
             path: build/server-main.rbxm
+            asset-type: application/octet-stream
           - artifact-name: client-main.rbxm
             path: build/client-main.rbxm
+            asset-type: application/octet-stream
+          - artifact-name: common.rbxm
+            path: build/common.rbxm
+            asset-type: application/octet-stream
 
           - artifact-name: server-loader-debug.rbxm
             path: build/debug/server-loader.rbxm
+            asset-type: application/octet-stream
           - artifact-name: client-loader-debug.rbxm
             path: build/debug/client-loader.rbxm
+            asset-type: application/octet-stream
           - artifact-name: server-main-debug.rbxm
             path: build/debug/server-main.rbxm
+            asset-type: application/octet-stream
           - artifact-name: client-main-debug.rbxm
             path: build/debug/client-main.rbxm
+            asset-type: application/octet-stream
+          - artifact-name: common-debug.rbxm
+            path: build/debug/common.rbxm
+            asset-type: application/octet-stream
 
     steps:
       - uses: actions/checkout@v3
@@ -82,8 +136,23 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "latest"
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
+
+      - name: Update yarn
+        run: yarn set version stable
+
+      - name: Install packages
+        run: yarn install --immutable
+
+      - name: Run npmluau
+        run: yarn run prepare
+
       - name: Build assets
-        run: lune build-assets
+        run: yarn run build-assets
 
       - name: Upload asset
         uses: actions/upload-artifact@v3
@@ -99,4 +168,4 @@ jobs:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
           asset_path: ${{ matrix.path }}
           asset_name: ${{ matrix.artifact-name }}
-          asset_content_type: application/roblox
+          asset_content_type: ${{ matrix.asset-type }}

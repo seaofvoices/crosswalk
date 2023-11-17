@@ -27,7 +27,17 @@ local function fileName(path: string): string
     return name
 end
 
+local function parent(path: string): string
+    local components = string.split(path, PATH_SEPARATOR)
+    if #components == 0 then
+        return ''
+    end
+    table.remove(components)
+    return table.concat(components, PATH_SEPARATOR)
+end
+
 return {
     join = join,
     fileName = fileName,
+    parent = parent,
 }

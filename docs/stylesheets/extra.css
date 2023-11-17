@@ -41,7 +41,3 @@
     width: auto;
     background-color: rgb(39, 37, 35);
 }
-
-.md-content__inner > p {
-    text-align: justify;
-}

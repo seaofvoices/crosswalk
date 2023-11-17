@@ -9,47 +9,37 @@ on:
       - main
 
 jobs:
-  code-style:
-    name: Verify code style
+  test:
+    name: Run tests
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: Roblox/setup-foreman@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify code format
-        run: stylua --check src .lune test-place
-
-  selene-check:
-    name: Selene analysis
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: Roblox/setup-foreman@v1
+      - uses: actions/setup-node@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: "latest"
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
 
-      - name: Run selene checks
-        run: selene src
+      - name: Update yarn
+        run: yarn set version stable
 
-  analyze:
-    name: Luau analysis
-    runs-on: ubuntu-latest
+      - name: Install packages
+        run: yarn install --immutable
 
-    steps:
-      - uses: actions/checkout@v3
+      - name: Run npmluau
+        run: yarn run prepare
 
-      - uses: Roblox/setup-foreman@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run linter
+        run: yarn run lint
 
-      - name: Fetch Roblox types
-        run: curl https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.lua > globalTypes.d.lua
+      - name: Verify code style
+        run: yarn run style-check
 
-      - name: Run luau-lsp analysis
-        run: luau-lsp analyze --base-luaurc=.luaurc --settings=.luau-analyze.json --definitions=globalTypes.d.lua --definitions=testezTypes.d.lua src
+      - name: Build assets
+        run: yarn run build-assets

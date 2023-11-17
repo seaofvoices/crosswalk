@@ -1,0 +1,8 @@
+/*.json
+/*.toml
+/*.md
+/*.tgz
+
+**/TestUtils
+**/*.spec.lua
+**/jest.config.lua

@@ -1,0 +1,20 @@
+{
+  "name": "crosswalk-server-main",
+  "version": "0.2.0",
+  "license": "MIT",
+  "main": "Main.server.lua",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seaofvoices/crosswalk.git",
+    "directory": "src/server-main"
+  },
+  "scripts": {
+    "prepare": "npmluau"
+  },
+  "dependencies": {
+    "crosswalk-server": "workspace:^"
+  },
+  "devDependencies": {
+    "npmluau": "^0.1.0"
+  }
+}
