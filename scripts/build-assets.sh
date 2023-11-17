@@ -11,7 +11,7 @@ CODE_OUTPUT=roblox
 rm -rf $CODE_OUTPUT
 mkdir -p $CODE_OUTPUT
 
-cp -r node_modules $CODE_OUTPUT/node_modules
+cp -rL node_modules $CODE_OUTPUT/node_modules
 
 if [ -z ${TESTS+x} ]; then
     echo "remove test related files..."
@@ -24,6 +24,10 @@ else
     cp -r modules/testez $CODE_OUTPUT/modules
 fi
 
+echo "list node_modules"
+ls -Ra node_modules
+
+echo "list copied node_modules"
 ls -Ra $CODE_OUTPUT/node_modules
 
 mkdir -p $CODE_OUTPUT/rojo
