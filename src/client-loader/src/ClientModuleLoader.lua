@@ -109,32 +109,56 @@ function ClientModuleLoader:loadModules()
     self._reporter:info('calling `Init` for shared modules')
     for _, moduleInfo in setupSharedModules do
         if moduleInfo.module.Init then
-            self._reporter:info('calling `Init` on `%s`', moduleInfo.name)
+            self._reporter:debug('calling `Init` on `%s`', moduleInfo.name)
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profilebegin(moduleInfo.name .. '.Init')
+            end
             moduleInfo.module.Init()
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profileend()
+            end
         end
     end
 
     self._reporter:info('calling `Init` for client modules')
     for _, moduleInfo in setupClientModules do
         if moduleInfo.module.Init then
-            self._reporter:info('calling `Init` on `%s`', moduleInfo.name)
+            self._reporter:debug('calling `Init` on `%s`', moduleInfo.name)
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profilebegin(moduleInfo.name .. '.Init')
+            end
             moduleInfo.module.Init()
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profileend()
+            end
         end
     end
 
     self._reporter:info('calling `Start` for shared modules')
     for _, moduleInfo in onlySharedModules do
         if moduleInfo.module.Start then
-            self._reporter:info('calling `Start` on `%s`', moduleInfo.name)
+            self._reporter:debug('calling `Start` on `%s`', moduleInfo.name)
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profilebegin(moduleInfo.name .. '.Start')
+            end
             moduleInfo.module.Start()
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profileend()
+            end
         end
     end
 
     self._reporter:info('calling `Start` for client modules')
     for _, moduleInfo in onlyClientModules do
         if moduleInfo.module.Start then
-            self._reporter:info('calling `Start` on `%s`', moduleInfo.name)
+            self._reporter:debug('calling `Start` on `%s`', moduleInfo.name)
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profilebegin(moduleInfo.name .. '.Start')
+            end
             moduleInfo.module.Start()
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profileend()
+            end
         end
     end
 
@@ -143,8 +167,17 @@ function ClientModuleLoader:loadModules()
     self._reporter:info('calling `OnPlayerReady` for client modules')
     for _, moduleInfo in onlyClientModules do
         if moduleInfo.module.OnPlayerReady then
-            self._reporter:info('calling `OnPlayerReady` on `%s`', moduleInfo.name)
-            task.spawn(moduleInfo.module.OnPlayerReady, self._player)
+            self._reporter:debug('calling `OnPlayerReady` on `%s`', moduleInfo.name)
+
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                task.spawn(function()
+                    debug.profilebegin(moduleInfo.name .. '.OnPlayerReady')
+                    moduleInfo.module.OnPlayerReady(self._player)
+                    debug.profileend()
+                end)
+            else
+                task.spawn(moduleInfo.module.OnPlayerReady, self._player)
+            end
         end
     end
 
