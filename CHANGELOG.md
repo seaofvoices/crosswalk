@@ -2,6 +2,10 @@
 
 ## Unreleased Changes
 
+* Add profile labels to `Init`, `Start`, `OnPlayerReady` and `OnPlayerLeaving` in DEV mode or when `_G.CROSSWALK_PROFILE` is `true` ([#32](https://github.com/seaofvoices/crosswalk/pull/32))
+
+## [0.2.0](https://github.com/seaofvoices/crosswalk/releases/tag/v0.2.0)
+
 * Add filter options to support class-like modules ([#26](https://github.com/seaofvoices/crosswalk/pull/26))
 * Fix client loader to send ready signal after receiving server modules data ([#25](https://github.com/seaofvoices/crosswalk/pull/25))
 * Add recursive module loading ([#22](https://github.com/seaofvoices/crosswalk/pull/22))

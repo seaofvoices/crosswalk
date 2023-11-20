@@ -15,6 +15,11 @@
       identifier: "DEV",
       value: false,
     },
+    {
+      rule: "inject_global_value",
+      identifier: "CROSSWALK_PROFILE",
+      value: true,
+    },
     "compute_expression",
     "remove_unused_if_branch",
     "filter_after_early_return",

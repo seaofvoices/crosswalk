@@ -131,7 +131,13 @@ function ModuleLoader:loadModules()
     for _, moduleInfo in setupSharedModules do
         if moduleInfo.module.Init then
             self._reporter:debug('calling `Init` on `%s`', moduleInfo.name)
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profilebegin(moduleInfo.name .. '.Init')
+            end
             moduleInfo.module.Init()
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profileend()
+            end
         end
     end
 
@@ -139,7 +145,13 @@ function ModuleLoader:loadModules()
     for _, moduleInfo in setupServerModules do
         if moduleInfo.module.Init then
             self._reporter:debug('calling `Init` on `%s`', moduleInfo.name)
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profilebegin(moduleInfo.name .. '.Init')
+            end
             moduleInfo.module.Init()
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profileend()
+            end
         end
     end
 
@@ -150,7 +162,13 @@ function ModuleLoader:loadModules()
     for _, moduleInfo in setupSharedModules do
         if moduleInfo.module.Start then
             self._reporter:debug('calling `Start` on `%s`', moduleInfo.name)
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profilebegin(moduleInfo.name .. '.Start')
+            end
             moduleInfo.module.Start()
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profileend()
+            end
         end
     end
 
@@ -158,7 +176,13 @@ function ModuleLoader:loadModules()
     for _, moduleInfo in setupServerModules do
         if moduleInfo.module.Start then
             self._reporter:debug('calling `Start` on `%s`', moduleInfo.name)
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profilebegin(moduleInfo.name .. '.Start')
+            end
             moduleInfo.module.Start()
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                debug.profileend()
+            end
         end
     end
 
@@ -457,7 +481,16 @@ function ModuleLoader:onPlayerReady(player: Player)
                 player.Name,
                 player.UserId
             )
-            task.spawn(moduleInfo.module.OnPlayerReady, player)
+
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                task.spawn(function()
+                    debug.profilebegin(moduleInfo.name .. '.OnPlayerReady')
+                    moduleInfo.module.OnPlayerReady(player)
+                    debug.profileend()
+                end)
+            else
+                task.spawn(moduleInfo.module.OnPlayerReady, player)
+            end
         end
     end
 end
@@ -481,7 +514,16 @@ function ModuleLoader:onPlayerRemoving(player: Player)
                 player.Name,
                 player.UserId
             )
-            task.spawn(moduleInfo.module.OnPlayerLeaving, player)
+
+            if _G.DEV or _G.CROSSWALK_PROFILE then
+                task.spawn(function()
+                    debug.profilebegin(moduleInfo.name .. '.OnPlayerLeaving')
+                    moduleInfo.module.OnPlayerLeaving(player)
+                    debug.profileend()
+                end)
+            else
+                task.spawn(moduleInfo.module.OnPlayerLeaving, player)
+            end
         end
     end
 end
