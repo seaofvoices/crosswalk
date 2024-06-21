@@ -4,6 +4,7 @@ local extractFunctionName = require('./extractFunctionName')
 local filterArray = require('./filterArray')
 local loadModules = require('./loadModules')
 local makeServices = require('./makeServices')
+local noYield = require('./noYield')
 local RemoteInformation = require('./RemoteInformation')
 local Reporter = require('./Reporter')
 local requireModule = require('./requireModule')
@@ -23,6 +24,7 @@ return {
     filterArray = filterArray,
     loadModules = loadModules,
     makeServices = makeServices,
+    noYield = noYield,
     requireModule = requireModule,
     validateSharedModule = validateSharedModule,
     Reporter = Reporter,
