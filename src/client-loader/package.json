@@ -15,7 +15,9 @@
     "crosswalk-common": "workspace:^"
   },
   "devDependencies": {
+    "@jsdotlua/jest": "^3.6.1-rc.2",
+    "@jsdotlua/jest-globals": "^3.6.1-rc.2",
     "crosswalk-test-utils": "workspace:^",
-    "npmluau": "^0.1.0"
+    "npmluau": "^0.1.1"
   }
 }

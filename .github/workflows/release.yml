@@ -24,14 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Enable corepack
+        run: corepack enable
+
       - uses: actions/setup-node@v3
         with:
-          node-version: "latest"
-          cache: "yarn"
-          cache-dependency-path: "yarn.lock"
-
-      - name: Update yarn
-        run: yarn set version stable
+          node-version: latest
+          registry-url: https://registry.npmjs.org
+          cache: yarn
+          cache-dependency-path: yarn.lock
 
       - name: Install packages
         run: yarn install --immutable
@@ -46,7 +47,8 @@ jobs:
         env:
           NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - run: yarn workspaces foreach --all --no-private npm publish --access public
+      - name: Publish to npm
+        run: yarn workspaces foreach --all --no-private npm publish --access public --tolerate-republish
 
   create-release:
     needs: publish-package
@@ -112,9 +114,6 @@ jobs:
           - artifact-name: client-main.rbxm
             path: build/client-main.rbxm
             asset-type: application/octet-stream
-          - artifact-name: common.rbxm
-            path: build/common.rbxm
-            asset-type: application/octet-stream
 
           - artifact-name: server-loader-debug.rbxm
             path: build/debug/server-loader.rbxm
@@ -128,14 +127,14 @@ jobs:
           - artifact-name: client-main-debug.rbxm
             path: build/debug/client-main.rbxm
             asset-type: application/octet-stream
-          - artifact-name: common-debug.rbxm
-            path: build/debug/common.rbxm
-            asset-type: application/octet-stream
 
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: 'true'
+
+      - name: Enable corepack
+        run: corepack enable
 
       - uses: Roblox/setup-foreman@v1
         with:
@@ -144,11 +143,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: "latest"
+          registry-url: https://registry.npmjs.org
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
-
-      - name: Update yarn
-        run: yarn set version stable
 
       - name: Install packages
         run: yarn install --immutable

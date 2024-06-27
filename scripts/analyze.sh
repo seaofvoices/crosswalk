@@ -9,7 +9,5 @@ if [ ! -f "$TYPES_FILE" ]; then
 fi
 
 luau-lsp analyze --base-luaurc=.luaurc --settings=.luau-analyze.json \
-    --definitions=$TYPES_FILE --definitions=testezTypes.d.lua \
+    --definitions=$TYPES_FILE \
     src
-
-selene src

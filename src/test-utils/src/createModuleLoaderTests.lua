@@ -1,3 +1,5 @@
+local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
+
 local createModuleScriptMock = require('./createModuleScriptMock')
 type ModuleScriptMock = createModuleScriptMock.ModuleScriptMock
 local Common = require('@pkg/crosswalk-common')
@@ -5,6 +7,11 @@ type Reporter = Common.Reporter
 local RequireMock = require('./RequireMock')
 type RequiredArgs = RequireMock.RequiredArgs
 local FunctionMock = require('./FunctionMock')
+
+local expect = jestGlobals.expect
+local it = jestGlobals.it
+local beforeEach = jestGlobals.beforeEach
+local describe = jestGlobals.describe
 
 type NewModuleLoaderConfig = {
     requireModule: (ModuleScript, ...any) -> any,
@@ -254,20 +261,20 @@ local function createModuleLoaderTests(
                 })
                 moduleLoader:loadModules()
 
-                expect(#requireModuleMock.calls).to.equal(3)
-                expect(requireModuleMock.calls[1].argumentCount).to.equal(4)
-                expect(requireModuleMock.calls[2].argumentCount).to.equal(4)
+                expect(#requireModuleMock.calls).toEqual(3)
+                expect(requireModuleMock.calls[1].argumentCount).toEqual(4)
+                expect(requireModuleMock.calls[2].argumentCount).toEqual(4)
 
                 local loadSharedModuleArguments = requireModuleMock.calls[1].arguments
-                expect(loadSharedModuleArguments[1].Name).to.equal(moduleB.Name)
+                expect(loadSharedModuleArguments[1].Name).toEqual(moduleB.Name)
 
                 local loadModuleArguments = requireModuleMock.calls[2].arguments
-                expect(loadModuleArguments[1].Name).to.equal(moduleA.Name)
-                expect(loadModuleArguments[2].B).to.be.a('table')
+                expect(loadModuleArguments[1].Name).toEqual(moduleA.Name)
+                expect(loadModuleArguments[2].B).toEqual(expect.any('table'))
 
                 local loadNestedModuleArguments = requireModuleMock.calls[3].arguments
-                expect(loadNestedModuleArguments[1].Name).to.equal(moduleC.Name)
-                expect(loadNestedModuleArguments[2].B).to.be.a('table')
+                expect(loadNestedModuleArguments[1].Name).toEqual(moduleC.Name)
+                expect(loadNestedModuleArguments[2].B).toEqual(expect.any('table'))
             end)
         end)
 
@@ -335,100 +342,100 @@ local function createModuleLoaderTests(
                         d2LoadedWith = requireMock:getRequiredArgs(moduleD2)
                         d3LoadedWith = requireMock:getRequiredArgs(moduleD2)
 
-                        expect(b2LoadedWith.n).to.equal(3)
-                        expect(b3LoadedWith.n).to.equal(3)
-                        expect(c2LoadedWith.n).to.equal(3)
-                        expect(d2LoadedWith.n).to.equal(3)
-                        expect(d3LoadedWith.n).to.equal(3)
+                        expect(b2LoadedWith.n).toEqual(3)
+                        expect(b3LoadedWith.n).toEqual(3)
+                        expect(c2LoadedWith.n).toEqual(3)
+                        expect(d2LoadedWith.n).toEqual(3)
+                        expect(d3LoadedWith.n).toEqual(3)
                     end
 
-                    expect(aLoadedWith.n).to.equal(3)
-                    expect(bLoadedWith.n).to.equal(3)
-                    expect(cLoadedWith.n).to.equal(3)
-                    expect(dLoadedWith.n).to.equal(3)
+                    expect(aLoadedWith.n).toEqual(3)
+                    expect(bLoadedWith.n).toEqual(3)
+                    expect(cLoadedWith.n).toEqual(3)
+                    expect(dLoadedWith.n).toEqual(3)
                 end)
 
                 if useRecursiveMode then
                     it('loads shared modules with nested module', function()
                         local aModules = aLoadedWith[1]
-                        expect(aModules.A2).to.equal(requireMock:getContent(moduleA2))
+                        expect(aModules.A2).toBe(requireMock:getContent(moduleA2))
 
                         local bModules = bLoadedWith[1]
-                        expect(bModules.B2).to.equal(requireMock:getContent(moduleB2))
+                        expect(bModules.B2).toBe(requireMock:getContent(moduleB2))
 
                         local b2Modules = b2LoadedWith[1]
-                        expect(b2Modules.B3).to.equal(requireMock:getContent(moduleB3))
+                        expect(b2Modules.B3).toBe(requireMock:getContent(moduleB3))
                     end)
 
                     it('loads nested shared modules with its parent module', function()
                         local a2Modules = a2LoadedWith[1]
-                        expect(a2Modules.A).to.equal(requireMock:getContent(moduleA))
+                        expect(a2Modules.A).toBe(requireMock:getContent(moduleA))
 
                         local b2Modules = b2LoadedWith[1]
-                        expect(b2Modules.B).to.equal(requireMock:getContent(moduleB))
+                        expect(b2Modules.B).toBe(requireMock:getContent(moduleB))
 
                         local b3Modules = b3LoadedWith[1]
-                        expect(b3Modules.B).to.equal(requireMock:getContent(moduleB))
-                        expect(b3Modules.B2).to.equal(requireMock:getContent(moduleB2))
+                        expect(b3Modules.B).toBe(requireMock:getContent(moduleB))
+                        expect(b3Modules.B2).toBe(requireMock:getContent(moduleB2))
                     end)
 
                     it("loads nested shared modules with its parent's siblings", function()
                         local a2Modules = a2LoadedWith[1]
-                        expect(a2Modules.B).to.equal(requireMock:getContent(moduleB))
+                        expect(a2Modules.B).toBe(requireMock:getContent(moduleB))
 
                         local b2Modules = b2LoadedWith[1]
-                        expect(b2Modules.A).to.equal(requireMock:getContent(moduleA))
+                        expect(b2Modules.A).toBe(requireMock:getContent(moduleA))
 
                         local b3Modules = b3LoadedWith[1]
-                        expect(b3Modules.A).to.equal(requireMock:getContent(moduleA))
+                        expect(b3Modules.A).toBe(requireMock:getContent(moduleA))
                     end)
 
                     it(
                         "loads nested shared modules without its parent's siblings children",
                         function()
                             local a2Modules = a2LoadedWith[1]
-                            expect(a2Modules.B2).to.equal(nil)
-                            expect(a2Modules.B3).to.equal(nil)
+                            expect(a2Modules.B2).toEqual(nil)
+                            expect(a2Modules.B3).toEqual(nil)
 
                             local b2Modules = b2LoadedWith[1]
-                            expect(b2Modules.A2).to.equal(nil)
+                            expect(b2Modules.A2).toEqual(nil)
                         end
                     )
 
                     it(('loads %s modules with nested module'):format(kind), function()
                         local cModules = cLoadedWith[1]
-                        expect(cModules.C2).to.equal(requireMock:getContent(moduleC2))
+                        expect(cModules.C2).toBe(requireMock:getContent(moduleC2))
 
                         local dModules = dLoadedWith[1]
-                        expect(dModules.D2).to.equal(requireMock:getContent(moduleD2))
+                        expect(dModules.D2).toBe(requireMock:getContent(moduleD2))
 
                         local d2Modules = d2LoadedWith[1]
-                        expect(d2Modules.D3).to.equal(requireMock:getContent(moduleD3))
+                        expect(d2Modules.D3).toBe(requireMock:getContent(moduleD3))
                     end)
 
                     it(('loads nested %s modules with its parent module'):format(kind), function()
                         local c2Modules = c2LoadedWith[1]
-                        expect(c2Modules.C).to.equal(requireMock:getContent(moduleC))
+                        expect(c2Modules.C).toBe(requireMock:getContent(moduleC))
 
                         local d2Modules = d2LoadedWith[1]
-                        expect(d2Modules.D).to.equal(requireMock:getContent(moduleD))
+                        expect(d2Modules.D).toBe(requireMock:getContent(moduleD))
 
                         local d3Modules = d3LoadedWith[1]
-                        expect(d3Modules.D).to.equal(requireMock:getContent(moduleD))
-                        expect(d3Modules.D2).to.equal(requireMock:getContent(moduleD2))
+                        expect(d3Modules.D).toBe(requireMock:getContent(moduleD))
+                        expect(d3Modules.D2).toBe(requireMock:getContent(moduleD2))
                     end)
 
                     it(
                         ("loads nested %s modules with its parent's siblings"):format(kind),
                         function()
                             local c2Modules = c2LoadedWith[1]
-                            expect(c2Modules.D).to.equal(requireMock:getContent(moduleD))
+                            expect(c2Modules.D).toBe(requireMock:getContent(moduleD))
 
                             local d2Modules = d2LoadedWith[1]
-                            expect(d2Modules.C).to.equal(requireMock:getContent(moduleC))
+                            expect(d2Modules.C).toBe(requireMock:getContent(moduleC))
 
                             local d3Modules = d3LoadedWith[1]
-                            expect(d3Modules.C).to.equal(requireMock:getContent(moduleC))
+                            expect(d3Modules.C).toBe(requireMock:getContent(moduleC))
                         end
                     )
 
@@ -438,37 +445,37 @@ local function createModuleLoaderTests(
                         ),
                         function()
                             local c2Modules = c2LoadedWith[1]
-                            expect(c2Modules.D2).to.equal(nil)
-                            expect(c2Modules.D3).to.equal(nil)
+                            expect(c2Modules.D2).toEqual(nil)
+                            expect(c2Modules.D3).toEqual(nil)
 
                             local d2Modules = d2LoadedWith[1]
-                            expect(d2Modules.C2).to.equal(nil)
+                            expect(d2Modules.C2).toEqual(nil)
                         end
                     )
                 end
 
                 it('loads shared modules with other shared modules', function()
                     local aModules = aLoadedWith[1]
-                    expect(aModules.A).to.equal(requireMock:getContent(moduleA))
-                    expect(aModules.B).to.equal(requireMock:getContent(moduleB))
+                    expect(aModules.A).toBe(requireMock:getContent(moduleA))
+                    expect(aModules.B).toBe(requireMock:getContent(moduleB))
 
                     local bModules = bLoadedWith[1]
-                    expect(bModules.A).to.equal(requireMock:getContent(moduleA))
-                    expect(bModules.B).to.equal(requireMock:getContent(moduleB))
+                    expect(bModules.A).toBe(requireMock:getContent(moduleA))
+                    expect(bModules.B).toBe(requireMock:getContent(moduleB))
                 end)
 
                 it('loads shared modules with `Services` utility', function()
                     local aServices = aLoadedWith[2]
                     local bServices = bLoadedWith[2]
 
-                    expect(aServices).to.equal(servicesMock)
-                    expect(bServices).to.equal(servicesMock)
+                    expect(aServices).toBe(servicesMock)
+                    expect(bServices).toBe(servicesMock)
                 end)
 
                 it(('loads %s module with `Services` utility'):format(kind), function()
                     local cServices = cLoadedWith[3]
 
-                    expect(cServices).to.equal(servicesMock)
+                    expect(cServices).toBe(servicesMock)
                 end)
 
                 local isServer = kind == 'server'
@@ -480,30 +487,30 @@ local function createModuleLoaderTests(
                         local aIsServer = aLoadedWith[3]
                         local bIsServer = bLoadedWith[3]
 
-                        expect(aIsServer).to.equal(isServer)
-                        expect(bIsServer).to.equal(isServer)
+                        expect(aIsServer).toEqual(isServer)
+                        expect(bIsServer).toEqual(isServer)
                     end
                 )
 
                 it('loads client modules with shared modules', function()
                     local cModules = cLoadedWith[1]
-                    expect(cModules.A).to.equal(requireMock:getContent(moduleA))
-                    expect(cModules.B).to.equal(requireMock:getContent(moduleB))
+                    expect(cModules.A).toBe(requireMock:getContent(moduleA))
+                    expect(cModules.B).toBe(requireMock:getContent(moduleB))
 
                     local dModules = dLoadedWith[1]
-                    expect(dModules.A).to.equal(requireMock:getContent(moduleA))
-                    expect(dModules.B).to.equal(requireMock:getContent(moduleB))
+                    expect(dModules.A).toBe(requireMock:getContent(moduleA))
+                    expect(dModules.B).toBe(requireMock:getContent(moduleB))
                 end)
 
                 it(('loads %s module with other %s modules'):format(kind, kind), function()
                     local cModules = cLoadedWith[1]
 
-                    expect(cModules.C).to.equal(requireMock:getContent(moduleC))
-                    expect(cModules.D).to.equal(requireMock:getContent(moduleD))
+                    expect(cModules.C).toBe(requireMock:getContent(moduleC))
+                    expect(cModules.D).toBe(requireMock:getContent(moduleD))
 
                     local dModules = dLoadedWith[1]
-                    expect(dModules.C).to.equal(requireMock:getContent(moduleC))
-                    expect(dModules.D).to.equal(requireMock:getContent(moduleD))
+                    expect(dModules.C).toBe(requireMock:getContent(moduleC))
+                    expect(dModules.D).toBe(requireMock:getContent(moduleD))
                 end)
             end)
 
@@ -557,16 +564,16 @@ local function createModuleLoaderTests(
                     })
                     moduleLoader:loadModules()
 
-                    expect(#requireModuleMock.calls).to.equal(2)
-                    expect(requireModuleMock.calls[1].argumentCount).to.equal(4)
-                    expect(requireModuleMock.calls[2].argumentCount).to.equal(4)
+                    expect(#requireModuleMock.calls).toEqual(2)
+                    expect(requireModuleMock.calls[1].argumentCount).toEqual(4)
+                    expect(requireModuleMock.calls[2].argumentCount).toEqual(4)
 
                     local loadSharedModuleArguments = requireModuleMock.calls[1].arguments
-                    expect(loadSharedModuleArguments[1].Name).to.equal(moduleB.Name)
+                    expect(loadSharedModuleArguments[1].Name).toEqual(moduleB.Name)
 
                     local loadModuleArguments = requireModuleMock.calls[2].arguments
-                    expect(loadModuleArguments[1].Name).to.equal(moduleA.Name)
-                    expect(loadModuleArguments[2].B).to.be.a('table')
+                    expect(loadModuleArguments[1].Name).toEqual(moduleA.Name)
+                    expect(loadModuleArguments[2].B).toEqual(expect.any('table'))
                 end
             )
         end
