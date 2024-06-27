@@ -1,7 +1,11 @@
 /node_modules
-/roblox
+/temp
+/build
+
 /modules
+
 /docs
 /site
 
 **/*.d.lua
+**/*.d.luau

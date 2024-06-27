@@ -1,5 +1,6 @@
 {
   "name": "crosswalk-template",
+  "emitLegacyScripts": false,
   "tree": {
     "$className": "DataModel",
     "HttpService": {
@@ -12,43 +13,18 @@
         "CharacterAutoLoads": false
       }
     },
-    "ReplicatedFirst": {
-      "ClientMain": {
-        "$path": "../node_modules/crosswalk-client-main/ClientMain.client.lua"
-      }
-    },
     "ReplicatedStorage": {
-      "ClientLoader": {
-        "$path": "../node_modules/crosswalk-client/src"
-      },
-      "Common": {
-        "$path": "../node_modules/crosswalk-common/src",
-        "links": {
-          "$path": "../node_modules/.luau-aliases"
-        }
-      },
-      "TestUtils": {
-        "$path": "../node_modules/crosswalk-test-utils/src"
+      "node_modules": {
+        "$path": "../node_modules"
       },
       "ClientModules": {
         "$path": "../test-place/ClientModules"
       },
       "SharedModules": {
         "$path": "../test-place/SharedModules"
-      },
-      "TestEZ": {
-        "$path": "../modules/testez"
-      }
-    },
-    "ServerScriptService": {
-      "Main": {
-        "$path": "../node_modules/crosswalk-server-main/Main.server.lua"
       }
     },
     "ServerStorage": {
-      "ServerLoader": {
-        "$path": "../node_modules/crosswalk-server/src"
-      },
       "ServerModules": {
         "$path": "../test-place/ServerModules"
       }

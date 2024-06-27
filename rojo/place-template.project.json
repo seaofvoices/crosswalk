@@ -1,40 +1,23 @@
 {
-  "name": "crosswalk-template",
+  "name": "place-template",
   "tree": {
     "$className": "DataModel",
-    "ReplicatedFirst": {
+    "Workspace": {
       "ClientMain": {
         "$path": "../node_modules/crosswalk-client-main/ClientMain.client.lua"
-      }
-    },
-    "ReplicatedStorage": {
-      "ClientLoader": {
-        "$path": "../node_modules/crosswalk-client/src"
       },
-      "Common": {
-        "$path": "../node_modules/crosswalk-common/src",
-        "links": {
-          "$path": "../node_modules/.luau-aliases"
-        }
-      },
-      "ClientModules": {
-        "$className": "Folder"
-      },
-      "SharedModules": {
-        "$className": "Folder"
-      }
-    },
-    "ServerScriptService": {
       "Main": {
         "$path": "../node_modules/crosswalk-server-main/Main.server.lua"
       }
     },
+    "ReplicatedStorage": {
+      "ClientLoader": {
+        "$path": "../node_modules/.luau-aliases/crosswalk-client.luau"
+      }
+    },
     "ServerStorage": {
       "ServerLoader": {
-        "$path": "../node_modules/crosswalk-server/src"
-      },
-      "ServerModules": {
-        "$className": "Folder"
+        "$path": "../node_modules/.luau-aliases/crosswalk-server.luau"
       }
     }
   }

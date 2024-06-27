@@ -5,4 +5,4 @@
 
 **/tests-utils
 **/*.spec.lua
-**/jest.config.lua
+jest.config.lua

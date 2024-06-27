@@ -1,9 +1,0 @@
-{
-    "name": "ClientLoader",
-    "tree": {
-        "$path": "../src/client-loader/src",
-        "Common": {
-            "$path": "../src/common/src"
-        }
-    }
-}

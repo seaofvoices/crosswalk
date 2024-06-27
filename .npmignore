@@ -1,15 +1,10 @@
 /.*
-/Packages
 /scripts
-/modules
 /docs
-/rojo
 /site
-/test-place
-/test-places
 
 /build
-/roblox
+/temp
 
 /*.json
 /*.json5
@@ -19,6 +14,20 @@
 /*.txt
 /*.tgz
 
-**/*.d.lua
-**/*.spec.lua
-**/jest.config.lua
+*.d.lua
+*.d.luau
+*.spec.lua
+*.spec.luau
+*.test.lua
+*.test.luau
+**/tests
+**/__tests__
+jest.config.lua
+jest.config.luau
+
+**/*.rbxl
+**/*.rbxlx
+**/*.rbxl.lock
+**/*.rbxlx.lock
+**/*.rbxm
+**/*.rbxmx

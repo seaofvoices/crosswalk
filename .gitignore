@@ -13,6 +13,7 @@
 /roblox
 **/sourcemap.json
 
+/temp
 build/
 test-places/
 docs/releases/main
