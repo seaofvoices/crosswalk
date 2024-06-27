@@ -49,7 +49,7 @@ jobs:
         run: yarn run prepare
 
       - name: Build assets
-        run: yarn run build-site
+        run: yarn run build:site
 
       - name: Build docs site
         run: |

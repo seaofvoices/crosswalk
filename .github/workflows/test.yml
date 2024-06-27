@@ -43,4 +43,4 @@ jobs:
         run: yarn run style-check
 
       - name: Build assets
-        run: yarn run build-assets
+        run: yarn run build
