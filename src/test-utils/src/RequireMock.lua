@@ -129,7 +129,7 @@ function RequireMock:expectEventLabels(expect: any, events: { string })
         ('expected %d events but received %d'):format(#events, #self._callEvents)
     )
     for i, label in events do
-        expect(self._callEvents[i].label).to.equal(label)
+        expect(self._callEvents[i].label).toEqual(label)
     end
 end
 

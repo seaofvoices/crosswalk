@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "license": "MIT",
   "main": "src/init.lua",
+  "homepage": "https://github.com/seaofvoices/crosswalk#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/seaofvoices/crosswalk.git",
@@ -15,6 +16,9 @@
     "crosswalk-common": "workspace:^"
   },
   "devDependencies": {
-    "npmluau": "^0.1.0"
+    "@jsdotlua/jest": "^3.6.1-rc.2",
+    "@jsdotlua/jest-globals": "^3.6.1-rc.2",
+    "crosswalk-test-utils": "workspace:^",
+    "npmluau": "^0.1.1"
   }
 }

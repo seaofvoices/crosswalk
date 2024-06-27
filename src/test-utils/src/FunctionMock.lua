@@ -66,27 +66,27 @@ function FunctionMock:call(...)
 end
 
 function FunctionMock:expectCalls(expect: any, expectedCalls: { Call })
-    expect(#self.calls).to.equal(#expectedCalls)
+    expect(#self.calls).toEqual(#expectedCalls)
     for i = 1, #expectedCalls do
         local call = self.calls[i]
-        expect(call.argumentCount).to.equal(expectedCalls[i].argumentCount)
+        expect(call.argumentCount).toEqual(expectedCalls[i].argumentCount)
         for j = 1, call.argumentCount do
-            expect(call.arguments[j]).to.equal(expectedCalls[i].arguments[j])
+            expect(call.arguments[j]).toEqual(expectedCalls[i].arguments[j])
         end
     end
 end
 
 function FunctionMock:expectNeverCalled(expect: any)
-    expect(#self.calls).to.equal(0)
+    expect(#self.calls).toEqual(0)
 end
 
 function FunctionMock:expectCalledOnce(expect: any, ...)
-    expect(#self.calls).to.equal(1)
+    expect(#self.calls).toEqual(1)
     local call = self.calls[1]
 
-    expect(call.argumentCount).to.equal(select('#', ...))
+    expect(call.argumentCount).toEqual(select('#', ...))
     for i = 1, call.argumentCount do
-        expect(call.arguments[i]).to.equal(select(i, ...))
+        expect(call.arguments[i]).toEqual(select(i, ...))
     end
 end
 

@@ -1,17 +1,20 @@
-return function()
-    local ReporterBuilder = require('./ReporterBuilder')
+local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 
-    local MESSAGE = 'oof'
+local ReporterBuilder = require('./ReporterBuilder')
 
-    for _, level in ipairs({ 'error', 'warn', 'info', 'debug' }) do
-        it(('logs %s calls'):format(level), function()
-            local reporter = ReporterBuilder.new():build();
-            (reporter :: any)[level](reporter, MESSAGE)
+local expect = jestGlobals.expect
+local it = jestGlobals.it
 
-            expect(#reporter.events).to.equal(1)
-            local event = reporter.events[1]
-            expect(event.level).to.equal(level)
-            expect(event.message).to.equal(MESSAGE)
-        end)
-    end
+local MESSAGE = 'oof'
+
+for _, level in ipairs({ 'error', 'warn', 'info', 'debug' }) do
+    it(('logs %s calls'):format(level), function()
+        local reporter = ReporterBuilder.new():build();
+        (reporter :: any)[level](reporter, MESSAGE)
+
+        expect(#reporter.events).toEqual(1)
+        local event = reporter.events[1]
+        expect(event.level).toEqual(level)
+        expect(event.message).toEqual(MESSAGE)
+    end)
 end

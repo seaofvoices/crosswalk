@@ -1,5 +1,6 @@
 {
   "name": "crosswalk-client-main",
+  "private": true,
   "version": "0.2.0",
   "license": "MIT",
   "main": "ClientMain.client.lua",
@@ -15,6 +16,6 @@
     "crosswalk-client": "workspace:^"
   },
   "devDependencies": {
-    "npmluau": "^0.1.0"
+    "npmluau": "^0.1.1"
   }
 }
