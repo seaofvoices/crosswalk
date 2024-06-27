@@ -6,7 +6,6 @@ crosswalk has two code dependencies, the **client loader** and the **server load
 | -- | -- |
 | Client Loader | [ReplicatedStorage](https://developer.roblox.com/en-us/api-reference/class/ReplicatedStorage) |
 | Server Loader | [ServerStorage](https://developer.roblox.com/en-us/api-reference/class/ServerStorage) |
-| Common | [ReplicatedStorage](https://developer.roblox.com/en-us/api-reference/class/ReplicatedStorage) |
 | Client Main | [StarterPlayerScripts](https://developer.roblox.com/en-us/api-reference/class/StarterPlayerScripts) or [ReplicatedFirst](https://developer.roblox.com/en-us/api-reference/class/ReplicatedFirst) |
 | Server Main| [ServerScriptService](https://developer.roblox.com/en-us/api-reference/class/ServerScriptService) |
 
@@ -20,7 +19,6 @@ You can also download these Roblox model files and insert them into your game. T
 | -- | -- | -- |
 | Client Loader | [client-loader.rbxm](../releases/main/debug/client-loader.rbxm) | [client-loader.rbxm](../releases/main/client-loader.rbxm) |
 | Server Loader | [server-loader.rbxm](../releases/main/debug/server-loader.rbxm) | [server-loader.rbxm](../releases/main/server-loader.rbxm) |
-| Common | [common.rbxm](../releases/main/debug/common.rbxm) | [common.rbxm](../releases/main/common.rbxm) |
 | Client Main | [client-main.rbxm](../releases/main/debug/client-main.rbxm) | [client-main.rbxm](../releases/main/client-main.rbxm) |
 | Server Main | [server-main.rbxm](../releases/main/debug/server-main.rbxm) | [server-main.rbxm](../releases/main/server-main.rbxm) |
 
