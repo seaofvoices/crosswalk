@@ -11,6 +11,7 @@ local validateSharedModule = Common.validateSharedModule
 local defaultCustomModuleFilter = Common.defaultCustomModuleFilter
 local defaultExcludeModuleFilter = Common.defaultExcludeModuleFilter
 local filterArray = Common.filterArray
+local noYield = Common.noYield
 local ClientRemotes = require('./ClientRemotes')
 type ClientRemotes = ClientRemotes.ClientRemotes
 
@@ -113,7 +114,13 @@ function ClientModuleLoader:loadModules()
             if _G.DEV or _G.CROSSWALK_PROFILE then
                 debug.profilebegin(moduleInfo.name .. '.Init')
             end
-            moduleInfo.module.Init()
+
+            if _G.DEV then
+                noYield(moduleInfo.module.Init)
+            else
+                moduleInfo.module.Init()
+            end
+
             if _G.DEV or _G.CROSSWALK_PROFILE then
                 debug.profileend()
             end
@@ -127,7 +134,13 @@ function ClientModuleLoader:loadModules()
             if _G.DEV or _G.CROSSWALK_PROFILE then
                 debug.profilebegin(moduleInfo.name .. '.Init')
             end
-            moduleInfo.module.Init()
+
+            if _G.DEV then
+                noYield(moduleInfo.module.Init)
+            else
+                moduleInfo.module.Init()
+            end
+
             if _G.DEV or _G.CROSSWALK_PROFILE then
                 debug.profileend()
             end
@@ -141,7 +154,13 @@ function ClientModuleLoader:loadModules()
             if _G.DEV or _G.CROSSWALK_PROFILE then
                 debug.profilebegin(moduleInfo.name .. '.Start')
             end
-            moduleInfo.module.Start()
+
+            if _G.DEV then
+                noYield(moduleInfo.module.Start)
+            else
+                moduleInfo.module.Start()
+            end
+
             if _G.DEV or _G.CROSSWALK_PROFILE then
                 debug.profileend()
             end
@@ -155,7 +174,13 @@ function ClientModuleLoader:loadModules()
             if _G.DEV or _G.CROSSWALK_PROFILE then
                 debug.profilebegin(moduleInfo.name .. '.Start')
             end
-            moduleInfo.module.Start()
+
+            if _G.DEV then
+                noYield(moduleInfo.module.Start)
+            else
+                moduleInfo.module.Start()
+            end
+
             if _G.DEV or _G.CROSSWALK_PROFILE then
                 debug.profileend()
             end
