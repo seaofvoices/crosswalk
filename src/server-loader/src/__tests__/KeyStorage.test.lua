@@ -7,7 +7,7 @@ local it = jestGlobals.it
 local beforeEach = jestGlobals.beforeEach
 local describe = jestGlobals.describe
 
-local KeyStorage = require('./KeyStorage')
+local KeyStorage = require('../KeyStorage')
 
 local PLAYER_NAME = 'oof'
 

@@ -1,7 +1,7 @@
 local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 local Mocks = require('@pkg/crosswalk-test-utils').Mocks
 
-local ClientRemotes = require('./ClientRemotes')
+local ClientRemotes = require('../ClientRemotes')
 
 local expect = jestGlobals.expect
 local it = jestGlobals.it

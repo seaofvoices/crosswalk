@@ -1,9 +1,9 @@
 local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 local TestUtils = require('@pkg/crosswalk-test-utils')
 
-local createKeySender = require('./createKeySender')
+local createKeySender = require('../createKeySender')
 
-local RemoteStorage = require('./RemoteStorage')
+local RemoteStorage = require('../RemoteStorage')
 type RemoteStorage = RemoteStorage.RemoteStorage
 
 local expect = jestGlobals.expect
