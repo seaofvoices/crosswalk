@@ -13,6 +13,20 @@ This framework wraps the remote events and remote functions calls in order to sp
 
 Check out the guide and quick reference on the [documentation site](https://crosswalk.seaofvoices.ca/).
 
+## Installation
+
+Add `crosswalk-client` and `crosswalk-server` in your dependencies:
+
+```bash
+yarn add crosswalk-client crosswalk-server
+```
+
+Or if you are using `npm`:
+
+```bash
+npm install crosswalk-client crosswalk-server
+```
+
 # License
 
 crosswalk is available under the MIT license. See [LICENSE.txt](LICENSE.txt) for details.
