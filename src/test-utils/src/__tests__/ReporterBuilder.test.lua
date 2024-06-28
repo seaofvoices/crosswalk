@@ -1,6 +1,6 @@
 local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 
-local ReporterBuilder = require('./ReporterBuilder')
+local ReporterBuilder = require('../ReporterBuilder')
 
 local expect = jestGlobals.expect
 local it = jestGlobals.it

@@ -4,5 +4,6 @@
 /*.tgz
 
 **/tests-utils
-**/*.spec.lua
+**/*.test.lua
+**/__tests__
 jest.config.lua

@@ -1,6 +1,6 @@
 local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 
-local getSecurity = require('./getSecurity')
+local getSecurity = require('../getSecurity')
 
 local expect = jestGlobals.expect
 local it = jestGlobals.it

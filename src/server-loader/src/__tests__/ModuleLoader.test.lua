@@ -1,11 +1,11 @@
 local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 local TestUtils = require('@pkg/crosswalk-test-utils')
 
-local ModuleLoader = require('./ModuleLoader')
+local ModuleLoader = require('../ModuleLoader')
 type ModuleLoader = ModuleLoader.ModuleLoader
-local ServerRemotes = require('./ServerRemotes')
+local ServerRemotes = require('../ServerRemotes')
 
-local createServerRemotesMock = require('./tests-utils/createServerRemotesMock')
+local createServerRemotesMock = require('./createServerRemotesMock')
 type RemoteEventMock = createServerRemotesMock.RemoteEventMock
 
 type Reporter = TestUtils.Reporter

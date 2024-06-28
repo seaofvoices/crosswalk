@@ -2,12 +2,12 @@ local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 local Common = require('@pkg/crosswalk-common')
 local TestUtils = require('@pkg/crosswalk-test-utils')
 
-local ServerRemotes = require('./ServerRemotes')
+local ServerRemotes = require('../ServerRemotes')
 type ServerRemotes = ServerRemotes.ServerRemotes
 
-local KeyStorage = require('./KeyStorage')
+local KeyStorage = require('../KeyStorage')
 type KeyStorage = KeyStorage.KeyStorage
-local RemoteStorage = require('./RemoteStorage')
+local RemoteStorage = require('../RemoteStorage')
 type RemoteStorage = RemoteStorage.RemoteStorage
 
 local Reporter = Common.Reporter

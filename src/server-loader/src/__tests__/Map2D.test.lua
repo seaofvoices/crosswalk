@@ -1,5 +1,5 @@
 local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
-local Map2D = require('./Map2D')
+local Map2D = require('../Map2D')
 
 local expect = jestGlobals.expect
 local it = jestGlobals.it
