@@ -1,6 +1,6 @@
 local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 
-local noYield = require('../noYield')
+local noYield = require('./noYield')
 
 local expect = jestGlobals.expect
 local jest = jestGlobals.jest
