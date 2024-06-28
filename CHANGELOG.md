@@ -2,6 +2,7 @@
 
 ## Unreleased Changes
 
+* Fix crosswalk-client and crosswalk-server package to export types ([#35](https://github.com/seaofvoices/crosswalk/pull/35))
 * Add check to verify that `Init` and `Start` functions do not yield in dev mode ([#34](https://github.com/seaofvoices/crosswalk/pull/34))
 * Add profile labels to `Init`, `Start`, `OnPlayerReady` and `OnPlayerLeaving` in DEV mode or when `_G.CROSSWALK_PROFILE` is `true` ([#32](https://github.com/seaofvoices/crosswalk/pull/32))
 
