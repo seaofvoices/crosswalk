@@ -1,6 +1,6 @@
 local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 
-local RemoteStorage = require('./RemoteStorage')
+local RemoteStorage = require('../RemoteStorage')
 
 local expect = jestGlobals.expect
 local it = jestGlobals.it

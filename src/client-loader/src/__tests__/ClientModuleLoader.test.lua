@@ -1,12 +1,12 @@
 local jestGlobals = require('@pkg/@jsdotlua/jest-globals')
 local TestUtils = require('@pkg/crosswalk-test-utils')
 
-local ClientModuleLoader = require('./ClientModuleLoader')
+local ClientModuleLoader = require('../ClientModuleLoader')
 
-local ClientRemotes = require('./ClientRemotes')
+local ClientRemotes = require('../ClientRemotes')
 type ClientRemotes = ClientRemotes.ClientRemotes
 local createModuleLoaderTests = TestUtils.createModuleLoaderTests
-local createClientRemotesMock = require('./tests-utils/createClientRemotesMock')
+local createClientRemotesMock = require('./createClientRemotesMock')
 
 type ModuleScriptMock = TestUtils.ModuleScriptMock
 type RequiredArgs = TestUtils.RequiredArgs
