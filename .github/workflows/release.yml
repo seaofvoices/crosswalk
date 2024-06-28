@@ -154,7 +154,7 @@ jobs:
         run: yarn run prepare
 
       - name: Build assets
-        run: yarn run build-assets
+        run: yarn run build
 
       - name: Upload asset
         uses: actions/upload-artifact@v3
