@@ -23,7 +23,7 @@ type Private = {
     clientRemotes: ClientRemotes,
 }
 
-type ClientLoaderConfiguration = {
+export type ClientLoaderConfiguration = {
     sharedModules: { Instance },
     clientModules: { Instance },
     externalModules: { [string]: any }?,
